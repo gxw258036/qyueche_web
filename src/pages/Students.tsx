@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
-import { Users, Plus, Edit2, Trash2, X, Save } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, X, Save, Check } from 'lucide-react';
 import { Student } from '@/types';
+import { api } from '@/services/api';
 
 const Students: React.FC = () => {
   const { students, loadStudents, addStudent, updateStudent, deleteStudent, currentStudent, settings } = useStore();
@@ -41,6 +42,7 @@ const Students: React.FC = () => {
       setFormData({ name: '', grade: 2 });
       setShowEditModal(false);
       await loadStudents();
+      window.location.reload();
     }
   };
 
@@ -48,6 +50,16 @@ const Students: React.FC = () => {
     if (window.confirm('确定要删除这个学生吗？所有相关数据将被删除。')) {
       await deleteStudent(id);
       await loadStudents();
+    }
+  };
+
+  const handleSetCurrent = async (student: Student) => {
+    try {
+      await api.settings.update({ currentStudentId: student.id, currentGrade: student.grade });
+      await loadStudents();
+      window.location.reload();
+    } catch (error) {
+      console.error('设置当前学生失败:', error);
     }
   };
 
@@ -126,15 +138,26 @@ const Students: React.FC = () => {
                     </td>
                     <td className="py-4 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {currentStudent?.id !== student.id && (
+                          <button
+                            onClick={() => handleSetCurrent(student)}
+                            className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                            title="设为当前学生"
+                          >
+                            <Check size={18} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleEdit(student)}
                           className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="编辑学生"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(student.id)}
                           className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="删除学生"
                         >
                           <Trash2 size={18} />
                         </button>
