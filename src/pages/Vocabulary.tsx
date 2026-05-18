@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { Plus, Edit, Trash2, Search, Filter, BookOpen, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Filter, BookOpen, CheckCircle2, XCircle, Clock, X } from 'lucide-react';
 import { Vocabulary as VocabularyType } from '@/types';
 
 const Vocabulary: React.FC = () => {
@@ -11,11 +11,13 @@ const Vocabulary: React.FC = () => {
     addVocabulary,
     updateVocabulary,
     deleteVocabulary,
+    bulkDeleteVocabulary,
     bulkAddVocabulary,
   } = useStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'reviewed' | 'mastered' | 'error'>('all');
+  const [gradeFilter, setGradeFilter] = useState<number>(settings.currentGrade);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingWord, setEditingWord] = useState<VocabularyType | null>(null);
   const [formData, setFormData] = useState<{
@@ -26,12 +28,14 @@ const Vocabulary: React.FC = () => {
   }>({
     word: '',
     meaning: '',
-    grade: 4,
+    grade: settings.currentGrade,
     status: 'new',
   });
   const [bulkInput, setBulkInput] = useState('');
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -43,17 +47,52 @@ const Vocabulary: React.FC = () => {
 
   useEffect(() => {
     if (!loading) {
-      loadVocabulary(settings.currentGrade);
+      loadVocabulary(gradeFilter);
     }
-  }, [settings.currentGrade, loading]);
+  }, [gradeFilter, loading]);
+
+  useEffect(() => {
+    setGradeFilter(settings.currentGrade);
+  }, [settings.currentGrade]);
 
   const filteredVocabulary = vocabulary.filter(word => {
     const matchesSearch = !searchTerm || 
       word.word.toLowerCase().includes(searchTerm.toLowerCase()) || 
       word.meaning.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || word.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesGrade = word.grade === gradeFilter;
+    return matchesSearch && matchesStatus && matchesGrade;
   });
+
+  useEffect(() => {
+    if (selectAll) {
+      setSelectedIds(new Set(filteredVocabulary.map(w => w.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  }, [selectAll, filteredVocabulary]);
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) {
+      alert('请先选择要删除的词汇');
+      return;
+    }
+    if (window.confirm(`确定要删除选中的 ${selectedIds.size} 个词汇吗？`)) {
+      await bulkDeleteVocabulary(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      setSelectAll(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +182,7 @@ const Vocabulary: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">词汇管理</h1>
-              <p className="text-gray-600">{settings.currentGrade}年级 · 共 {filteredVocabulary.length} 个词汇</p>
+              <p className="text-gray-600">共 {filteredVocabulary.length} 个词汇</p>
             </div>
             <div className="flex gap-3">
               <button
@@ -151,6 +190,14 @@ const Vocabulary: React.FC = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200"
               >
                 批量导入
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedIds.size === 0}
+              >
+                <Trash2 size={18} />
+                批量删除 {selectedIds.size > 0 && `(${selectedIds.size})`}
               </button>
               <button
                 onClick={() => {
@@ -166,6 +213,17 @@ const Vocabulary: React.FC = () => {
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <select
+                value={gradeFilter}
+                onChange={(e) => setGradeFilter(parseInt(e.target.value))}
+                className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                {[2, 3, 4, 5, 6].map((grade) => (
+                  <option key={grade} value={grade}>{grade}年级</option>
+                ))}
+              </select>
+            </div>
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -192,16 +250,47 @@ const Vocabulary: React.FC = () => {
             </div>
           </div>
 
+          <div className="mb-4 flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="selectAll"
+              checked={selectAll}
+              onChange={(e) => setSelectAll(e.target.checked)}
+              className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+            />
+            <label htmlFor="selectAll" className="text-gray-700">全选</label>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={() => {
+                  setSelectedIds(new Set());
+                  setSelectAll(false);
+                }}
+                className="ml-auto text-gray-500 hover:text-gray-700"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
+
           <div className="space-y-3">
             {filteredVocabulary.map((word) => {
               const badge = getStatusBadge(word.status);
               const Icon = badge.icon;
+              const isSelected = selectedIds.has(word.id);
               return (
                 <div
                   key={word.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all"
+                  className={`flex items-center justify-between p-4 rounded-xl transition-all ${
+                    isSelected ? 'bg-blue-50 border-2 border-blue-500' : 'bg-gray-50 hover:bg-gray-100'
+                  }`}
                 >
                   <div className="flex items-center gap-4">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelect(word.id)}
+                      className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                    />
                     <div>
                       <div className="flex items-center gap-3">
                         <span className="text-lg font-semibold text-gray-800">{word.word}</span>
@@ -215,6 +304,7 @@ const Vocabulary: React.FC = () => {
                       </div>
                       <div className="text-gray-600 mt-1">{word.meaning}</div>
                       <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                        <span>年级: {word.grade}</span>
                         <span>正确: {word.correctCount}</span>
                         <span>错误: {word.errorCount}</span>
                       </div>
