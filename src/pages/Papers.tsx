@@ -1,31 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { FileText, AlertCircle, Download, Printer, Eye } from 'lucide-react';
 import { Vocabulary } from '@/types';
 import { generatePDF, printPaper } from '@/utils/pdf';
+import { api } from '@/services/api';
 
 const Papers: React.FC = () => {
-  const {
-    settings,
-    vocabulary,
-    getTodayTask,
-  } = useStore();
+  const { settings, vocabulary, dailyTask, initialize, loadVocabulary } = useStore();
 
   const [paperType, setPaperType] = useState<'daily' | 'error' | 'custom'>('daily');
   const [showAnswers, setShowAnswers] = useState(false);
   const [previewWords, setPreviewWords] = useState<Vocabulary[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [customWordCount, setCustomWordCount] = useState(20);
+  const [loading, setLoading] = useState(true);
 
-  const todayTask = getTodayTask();
-  const gradeVocabulary = vocabulary.filter(v => v.grade === settings.currentGrade);
+  useEffect(() => {
+    const init = async () => {
+      await initialize();
+      await loadVocabulary();
+      setLoading(false);
+    };
+    init();
+  }, []);
+
+  const gradeVocabulary = vocabulary;
   const errorVocabulary = gradeVocabulary.filter(v => v.status === 'error');
 
-  const getWordsForPaper = () => {
+  const getWordsForPaper = (): Vocabulary[] => {
     switch (paperType) {
       case 'daily':
-        return todayTask 
-          ? [...todayTask.newWords, ...todayTask.reviewedWords]
+        return dailyTask 
+          ? [...(dailyTask.newWords || []), ...(dailyTask.reviewedWords || [])]
           : [];
       case 'error':
         return errorVocabulary;
@@ -45,12 +51,16 @@ const Papers: React.FC = () => {
 
   const handleGeneratePDF = async () => {
     const words = getWordsForPaper();
-    await generatePDF(words, showAnswers);
+    if (words.length > 0) {
+      await generatePDF(words, showAnswers);
+    }
   };
 
   const handlePrint = async () => {
     const words = getWordsForPaper();
-    await printPaper(words, showAnswers);
+    if (words.length > 0) {
+      await printPaper(words, showAnswers);
+    }
   };
 
   const getPaperTitle = () => {
@@ -65,8 +75,8 @@ const Papers: React.FC = () => {
   const getPaperDescription = () => {
     switch (paperType) {
       case 'daily':
-        return todayTask 
-          ? `共 ${todayTask.newWords.length + todayTask.reviewedWords.length} 个词汇，含 ${todayTask.newWords.length} 个新词`
+        return dailyTask 
+          ? `共 ${(dailyTask.newWords?.length || 0) + (dailyTask.reviewedWords?.length || 0)} 个词汇，含 ${dailyTask.newWords?.length || 0} 个新词`
           : '请先生成今日任务';
       case 'error':
         return `共 ${errorVocabulary.length} 个错题需要复习`;
@@ -76,6 +86,16 @@ const Papers: React.FC = () => {
         return '';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin mx-auto mb-4 text-orange-500">加载中...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">

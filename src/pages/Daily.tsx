@@ -7,36 +7,38 @@ import { generatePDF, printPaper } from '@/utils/pdf';
 const Daily: React.FC = () => {
   const {
     settings,
-    initializeVocabulary,
+    dailyTask,
+    initialize,
     generateDailyTask,
-    getTodayTask,
-    markErrorWords,
-    completeTodayTask,
+    completeDailyTask,
   } = useStore();
   
-  const [todayTask, setTodayTask] = useState<ReturnType<typeof getTodayTask>>(null);
   const [selectedErrors, setSelectedErrors] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    initializeVocabulary();
-    const task = getTodayTask();
-    if (!task) {
-      const newTask = generateDailyTask(settings.currentGrade);
-      setTodayTask(newTask);
-    } else {
-      setTodayTask(task);
-      if (task.markedErrorWords) {
-        setSelectedErrors(task.markedErrorWords);
-      }
-      if (task.completed) {
-        setIsComplete(true);
-      }
-    }
-  }, [initializeVocabulary, generateDailyTask, getTodayTask, settings.currentGrade]);
+    const init = async () => {
+      await initialize();
+      setLoading(false);
+    };
+    init();
+  }, []);
 
-  const allWords: Vocabulary[] = todayTask 
-    ? [...todayTask.newWords, ...todayTask.reviewedWords] 
+  useEffect(() => {
+    if (!loading && !dailyTask) {
+      generateDailyTask(settings.currentGrade);
+    }
+    if (dailyTask?.markedErrorWords) {
+      setSelectedErrors(dailyTask.markedErrorWords);
+    }
+    if (dailyTask?.completed) {
+      setIsComplete(true);
+    }
+  }, [dailyTask, loading]);
+
+  const allWords: Vocabulary[] = dailyTask 
+    ? [...(dailyTask.newWords || []), ...(dailyTask.reviewedWords || [])] 
     : [];
 
   const toggleErrorWord = (wordId: string) => {
@@ -49,36 +51,45 @@ const Daily: React.FC = () => {
     });
   };
 
-  const handleSaveErrors = () => {
-    if (todayTask) {
-      markErrorWords(todayTask.date, selectedErrors);
-      completeTodayTask();
+  const handleSaveErrors = async () => {
+    if (dailyTask) {
+      await completeDailyTask(dailyTask.id, selectedErrors);
       setIsComplete(true);
     }
   };
 
   const handleGeneratePDF = async () => {
-    if (todayTask) {
-      await generatePDF([...todayTask.newWords, ...todayTask.reviewedWords], false);
+    if (allWords.length > 0) {
+      await generatePDF(allWords, false);
     }
   };
 
   const handlePrint = async () => {
-    if (todayTask) {
-      await printPaper([...todayTask.newWords, ...todayTask.reviewedWords], false);
+    if (allWords.length > 0) {
+      await printPaper(allWords, false);
     }
   };
 
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
     if (window.confirm('确定要重新生成今日任务吗？')) {
-      const newTask = generateDailyTask(settings.currentGrade);
-      setTodayTask(newTask);
+      await generateDailyTask(settings.currentGrade);
       setSelectedErrors([]);
       setIsComplete(false);
     }
   };
 
-  if (!todayTask) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
+          <p className="text-xl text-gray-600">正在加载...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dailyTask) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
@@ -127,11 +138,11 @@ const Daily: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-orange-50 p-4 rounded-xl text-center">
-              <div className="text-3xl font-bold text-orange-600">{todayTask.newWords.length}</div>
+              <div className="text-3xl font-bold text-orange-600">{(dailyTask.newWords || []).length}</div>
               <div className="text-sm text-orange-700">新词</div>
             </div>
             <div className="bg-blue-50 p-4 rounded-xl text-center">
-              <div className="text-3xl font-bold text-blue-600">{todayTask.reviewedWords.length}</div>
+              <div className="text-3xl font-bold text-blue-600">{(dailyTask.reviewedWords || []).length}</div>
               <div className="text-sm text-blue-700">旧词</div>
             </div>
             <div className="bg-green-50 p-4 rounded-xl text-center">
@@ -148,7 +159,7 @@ const Daily: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-4">词汇列表</h2>
             {allWords.map((word, index) => {
               const isError = selectedErrors.includes(word.id);
-              const isNew = todayTask.newWords.some(w => w.id === word.id);
+              const isNew = (dailyTask.newWords || []).some((w: any) => w.id === word.id);
               return (
                 <div
                   key={word.id}

@@ -26,6 +26,7 @@ export interface Settings {
 }
 
 export interface DailyTask {
+  id: string;
   date: string;
   grade: number;
   newWords: Vocabulary[];

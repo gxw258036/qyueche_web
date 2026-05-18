@@ -6,39 +6,29 @@ import { GRADE_CONFIGS } from '@/types';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    settings, vocabulary, dailyTasks, updateSettings, initializeVocabulary, generateDailyTask, getTodayTask
-  } = useStore();
-  const [todayTask, setTodayTask] = useState<ReturnType<typeof getTodayTask>>(null);
+  const { settings, vocabulary, initialize, updateSettings, loadVocabulary, dailyTask, loadStatistics } = useStore();
+  const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    initializeVocabulary();
-  }, [initializeVocabulary]);
+    initialize().then(() => {
+      loadVocabulary();
+      loadStatistics(settings.currentGrade).then(setStats);
+    });
+  }, []);
 
   useEffect(() => {
-    const task = getTodayTask();
-    setTodayTask(task);
-  }, [getTodayTask, dailyTasks]);
+    if (settings.currentGrade) {
+      loadStatistics(settings.currentGrade).then(setStats);
+    }
+  }, [settings.currentGrade]);
 
-  const handleGradeChange = (grade: number) => {
-    updateSettings({ currentGrade: grade });
+  const handleGradeChange = async (grade: number) => {
+    await updateSettings({ currentGrade: grade });
   };
 
-  const handleGenerateToday = () => {
-    if (!todayTask) {
-      generateDailyTask(settings.currentGrade);
-    }
+  const handleGenerateToday = async () => {
     navigate('/daily');
   };
-
-  const stats = {
-    totalWords: vocabulary.filter(v => v.grade === settings.currentGrade).length,
-    newWords: vocabulary.filter(v => v.grade === settings.currentGrade && v.status === 'new').length,
-    masteredWords: vocabulary.filter(v => v.grade === settings.currentGrade && v.status === 'mastered').length,
-    errorWords: vocabulary.filter(v => v.grade === settings.currentGrade && v.status === 'error').length,
-  };
-
-  const config = GRADE_CONFIGS[settings.currentGrade];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
@@ -83,21 +73,21 @@ const Home: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">今日新词数量</span>
-                <span className="text-2xl font-bold text-orange-500">{config.newCount}</span>
+                <span className="text-2xl font-bold text-orange-500">{GRADE_CONFIGS[settings.currentGrade].newCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">复习旧词数量</span>
-                <span className="text-2xl font-bold text-blue-500">{config.reviewCount}</span>
+                <span className="text-2xl font-bold text-blue-500">{GRADE_CONFIGS[settings.currentGrade].reviewCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">总数量</span>
-                <span className="text-2xl font-bold text-gray-800">{config.total}</span>
+                <span className="text-2xl font-bold text-gray-800">{GRADE_CONFIGS[settings.currentGrade].total}</span>
               </div>
               <button
                 onClick={handleGenerateToday}
                 className="w-full py-4 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-blue-700 transition-all"
               >
-                {todayTask ? '查看今日任务' : '开始今日默写'}
+                {dailyTask ? '查看今日任务' : '开始今日默写'}
               </button>
             </div>
           </div>
@@ -110,19 +100,19 @@ const Home: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">总词汇量</span>
-                <span className="text-xl font-semibold text-gray-800">{stats.totalWords}</span>
+                <span className="text-xl font-semibold text-gray-800">{stats?.total || 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">未学习</span>
-                <span className="text-xl font-semibold text-orange-500">{stats.newWords}</span>
+                <span className="text-xl font-semibold text-orange-500">{stats?.new || 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">已掌握</span>
-                <span className="text-xl font-semibold text-green-500">{stats.masteredWords}</span>
+                <span className="text-xl font-semibold text-green-500">{stats?.mastered || 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">需复习</span>
-                <span className="text-xl font-semibold text-red-500">{stats.errorWords}</span>
+                <span className="text-xl font-semibold text-red-500">{stats?.error || 0}</span>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { Plus, Edit, Trash2, Search, Filter, BookOpen, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Vocabulary as VocabularyType } from '@/types';
@@ -7,9 +7,12 @@ const Vocabulary: React.FC = () => {
   const {
     settings,
     vocabulary,
+    initialize,
+    loadVocabulary,
     addVocabulary,
     updateVocabulary,
     deleteVocabulary,
+    bulkAddVocabulary,
   } = useStore();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,27 +27,36 @@ const Vocabulary: React.FC = () => {
   }>({
     word: '',
     meaning: '',
-    grade: settings.currentGrade,
+    grade: 4,
     status: 'new',
   });
   const [bulkInput, setBulkInput] = useState('');
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const gradeVocab = vocabulary.filter((v) => v.grade === settings.currentGrade);
-  
-  const filteredVocabulary = gradeVocab.filter((word) => {
-    const matchesSearch = word.word.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         word.meaning.includes(searchTerm);
-    const matchesStatus = statusFilter === 'all' || word.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    const init = async () => {
+      await initialize();
+      await loadVocabulary();
+      setLoading(false);
+    };
+    init();
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!loading) {
+      loadVocabulary(settings.currentGrade, statusFilter === 'all' ? undefined : statusFilter, searchTerm || undefined);
+    }
+  }, [settings.currentGrade, statusFilter, searchTerm, loading]);
+
+  const filteredVocabulary = vocabulary;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingWord) {
-      updateVocabulary(editingWord.id, formData);
+      await updateVocabulary(editingWord.id, formData);
     } else {
-      addVocabulary({
+      await addVocabulary({
         ...formData,
         correctCount: 0,
         errorCount: 0,
@@ -66,9 +78,9 @@ const Vocabulary: React.FC = () => {
     setShowAddModal(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('确定要删除这个词汇吗？')) {
-      deleteVocabulary(id);
+      await deleteVocabulary(id);
     }
   };
 
@@ -82,9 +94,9 @@ const Vocabulary: React.FC = () => {
     setEditingWord(null);
   };
 
-  const handleBulkImport = () => {
+  const handleBulkImport = async () => {
     const lines = bulkInput.trim().split('\n');
-    let count = 0;
+    const words: { word: string; meaning: string; grade: number }[] = [];
     
     lines.forEach((line) => {
       const parts = line.split(/[,，\t]/);
@@ -92,22 +104,14 @@ const Vocabulary: React.FC = () => {
         const word = parts[0].trim();
         const meaning = parts[1].trim();
         if (word && meaning) {
-          addVocabulary({
-            word,
-            meaning,
-            grade: settings.currentGrade,
-            status: 'new',
-            correctCount: 0,
-            errorCount: 0,
-            isCustom: true,
-          });
-          count++;
+          words.push({ word, meaning, grade: settings.currentGrade });
         }
       }
     });
     
-    if (count > 0) {
-      alert(`成功导入 ${count} 个词汇！`);
+    if (words.length > 0) {
+      await bulkAddVocabulary(words);
+      alert(`成功导入 ${words.length} 个词汇！`);
       setBulkInput('');
       setShowBulkModal(false);
     }
@@ -123,6 +127,16 @@ const Vocabulary: React.FC = () => {
     return badges[status as keyof typeof badges] || badges.new;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin mx-auto mb-4 text-orange-500">加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -130,7 +144,7 @@ const Vocabulary: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">词汇管理</h1>
-              <p className="text-gray-600">{settings.currentGrade}年级 · 共 {gradeVocab.length} 个词汇</p>
+              <p className="text-gray-600">{settings.currentGrade}年级 · 共 {filteredVocabulary.length} 个词汇</p>
             </div>
             <div className="flex gap-3">
               <button
