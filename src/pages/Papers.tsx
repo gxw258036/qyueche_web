@@ -29,9 +29,7 @@ const Papers: React.FC = () => {
   const getWordsForPaper = (): Vocabulary[] => {
     switch (paperType) {
       case 'daily':
-        return dailyTask 
-          ? [...(dailyTask.newWords || []), ...(dailyTask.reviewedWords || [])]
-          : [];
+        return dailyTask?.allWords || [];
       case 'error':
         return errorVocabulary;
       case 'custom':
@@ -75,7 +73,7 @@ const Papers: React.FC = () => {
     switch (paperType) {
       case 'daily':
         return dailyTask 
-          ? `共 ${(dailyTask.newWords?.length || 0) + (dailyTask.reviewedWords?.length || 0)} 个词汇，含 ${dailyTask.newWords?.length || 0} 个新词`
+          ? `共 ${dailyTask.totalCount} 个词汇`
           : '请先生成今日任务';
       case 'error':
         return `共 ${errorVocabulary.length} 个错题需要复习`;

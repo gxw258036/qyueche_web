@@ -243,7 +243,7 @@ router.post('/vocabulary/bulk', (req, res) => {
 
     const insert = db.prepare(`
       INSERT INTO vocabulary (id, word, meaning, grade, studentId, status, correctCount, errorCount, addedAt, isCustom)
-      VALUES (?, ?, ?, ?, ?, 'new', 0, 0, ?, 1)
+      VALUES (?, ?, ?, ?, ?, 'reviewed', 0, 0, ?, 1)
     `);
 
     const insertMany = db.transaction((items: any[]) => {
@@ -275,28 +275,39 @@ router.get('/daily-task', (req, res) => {
         ? JSON.parse((task as any).markedErrorWords)
         : [];
 
-      const newWords = db.prepare(`
-        SELECT * FROM vocabulary WHERE id IN (
-          SELECT id FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'new' LIMIT 10
-        )
-      `).all(Number(grade), studentId || null);
+      const allWords = db.prepare(`
+        SELECT v.* FROM vocabulary v
+        INNER JOIN daily_task_words dt ON v.id = dt.vocabularyId
+        WHERE dt.taskId = ?
+        ORDER BY dt.id
+      `).all((task as any).id);
 
-      const reviewedWords = db.prepare(`
-        SELECT * FROM vocabulary WHERE id IN (
-          SELECT id FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status IN ('reviewed', 'mastered', 'error') LIMIT 20
-        )
-      `).all(Number(grade), studentId || null);
-
-      res.json({
-        ...task,
-        newWords,
-        reviewedWords,
-        markedErrorWords: vocabIds
-      });
+      if (allWords.length === 0) {
+        const vocabList = db.prepare(`
+          SELECT * FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL)
+          ORDER BY RANDOM()
+          LIMIT ?
+        `).all(Number(grade), studentId || null, 30);
+        
+        res.json({
+          ...task,
+          allWords: vocabList,
+          markedErrorWords: vocabIds,
+          totalCount: vocabList.length
+        });
+      } else {
+        res.json({
+          ...task,
+          allWords,
+          markedErrorWords: vocabIds,
+          totalCount: allWords.length
+        });
+      }
     } else {
       res.json(null);
     }
   } catch (error) {
+    console.error('获取任务失败:', error);
     res.status(500).json({ error: '获取任务失败' });
   }
 });
@@ -306,52 +317,53 @@ router.post('/daily-task/generate', (req, res) => {
     const { grade, studentId } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
-    const config: Record<number, { total: number; newCount: number; reviewCount: number }> = {
-      2: { total: 30, newCount: 10, reviewCount: 20 },
-      3: { total: 30, newCount: 10, reviewCount: 20 },
-      4: { total: 30, newCount: 10, reviewCount: 20 },
-      5: { total: 40, newCount: 15, reviewCount: 25 },
-      6: { total: 40, newCount: 15, reviewCount: 25 },
+    const config: Record<number, { total: number }> = {
+      2: { total: 30 },
+      3: { total: 30 },
+      4: { total: 30 },
+      5: { total: 30 },
+      6: { total: 30 },
     };
 
-    const cfg = config[Number(grade)] || config[4];
+    const targetTotal = config[Number(grade)]?.total || 30;
+
+    const allWords: any[] = [];
 
     const newWords = db.prepare(`
       SELECT * FROM vocabulary
       WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'new'
       ORDER BY RANDOM()
       LIMIT ?
-    `).all(Number(grade), studentId || null, cfg.newCount);
+    `).all(Number(grade), studentId || null, targetTotal);
+
+    const reviewedWords = db.prepare(`
+      SELECT * FROM vocabulary
+      WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'reviewed'
+      ORDER BY RANDOM()
+      LIMIT ?
+    `).all(Number(grade), studentId || null, targetTotal);
 
     const errorWords = db.prepare(`
       SELECT * FROM vocabulary
       WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'error'
       ORDER BY RANDOM()
-    `).all(Number(grade), studentId || null);
+      LIMIT ?
+    `).all(Number(grade), studentId || null, targetTotal);
 
-    const reviewedWords = db.prepare(`
+    const masteredWords = db.prepare(`
       SELECT * FROM vocabulary
-      WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status IN ('reviewed', 'mastered')
+      WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'mastered'
       ORDER BY RANDOM()
       LIMIT ?
-    `).all(Number(grade), studentId || null, cfg.reviewCount);
+    `).all(Number(grade), studentId || null, targetTotal);
 
-    const reviewPool: any[] = [...errorWords, ...reviewedWords];
-    let selectedReview = reviewPool.slice(0, cfg.reviewCount);
+    allWords.push(...newWords);
+    allWords.push(...errorWords);
+    allWords.push(...reviewedWords);
+    allWords.push(...masteredWords);
 
-    if (selectedReview.length < cfg.reviewCount) {
-      const extra = db.prepare(`
-        SELECT * FROM vocabulary
-        WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status NOT IN ('new')
-        ORDER BY RANDOM()
-        LIMIT ?
-      `).all(Number(grade), studentId || null, cfg.reviewCount - selectedReview.length);
-      selectedReview = [...selectedReview, ...extra];
-    }
-
-    const allWords = [...newWords, ...selectedReview].sort(() => Math.random() - 0.5);
-    const newWordsResult = allWords.slice(0, cfg.newCount);
-    const reviewedWordsResult = allWords.slice(cfg.newCount);
+    const shuffledWords = allWords.sort(() => Math.random() - 0.5);
+    const selectedWords = shuffledWords.slice(0, targetTotal);
 
     const taskId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
@@ -360,19 +372,30 @@ router.post('/daily-task/generate', (req, res) => {
     `).run(today, Number(grade), studentId || null);
 
     db.prepare(`
-      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords)
-      VALUES (?, ?, ?, ?, 0, '[]')
-    `).run(taskId, today, Number(grade), studentId || null);
+      DELETE FROM daily_task_words WHERE taskId = ?
+    `).run(taskId);
+
+    db.prepare(`
+      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords, totalCount)
+      VALUES (?, ?, ?, ?, 0, '[]', ?)
+    `).run(taskId, today, Number(grade), studentId || null, selectedWords.length);
+
+    const insertTaskWord = db.prepare(`
+      INSERT INTO daily_task_words (taskId, vocabularyId) VALUES (?, ?)
+    `);
+    for (const word of selectedWords) {
+      insertTaskWord.run(taskId, word.id);
+    }
 
     res.json({
       id: taskId,
       date: today,
       grade: Number(grade),
       studentId,
-      newWords: newWordsResult,
-      reviewedWords: reviewedWordsResult,
+      allWords: selectedWords,
       completed: false,
-      markedErrorWords: []
+      markedErrorWords: [],
+      totalCount: selectedWords.length
     });
   } catch (error) {
     console.error('生成任务失败:', error);
@@ -382,50 +405,57 @@ router.post('/daily-task/generate', (req, res) => {
 
 router.post('/daily-task/complete', (req, res) => {
   try {
-    const { taskId, errorWordIds, studentId } = req.body;
+    const { taskId, errorWordIds, correctWordIds, studentId, totalCount } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     db.prepare(`
       UPDATE daily_tasks
-      SET completed = 1, markedErrorWords = ?
+      SET completed = 1, markedErrorWords = ?, correctCount = ?, errorCount = ?, totalCount = ?
       WHERE id = ?
-    `).run(JSON.stringify(errorWordIds), taskId);
+    `).run(JSON.stringify(errorWordIds || []), correctWordIds?.length || 0, errorWordIds?.length || 0, totalCount || 0, taskId);
 
-    const updateVocab = db.prepare(`
-      UPDATE vocabulary
-      SET status = ?, errorCount = errorCount + 1, lastReviewedAt = ?, updatedAt = ?
-      WHERE id = ?
-    `);
-
-    const updateCorrect = db.transaction((ids: string[]) => {
-      for (const id of ids) {
+    if (errorWordIds && errorWordIds.length > 0) {
+      for (const id of errorWordIds) {
         const vocab = db.prepare('SELECT * FROM vocabulary WHERE id = ?').get(id) as any;
         if (vocab) {
-          if (vocab.correctCount >= 3) {
+          db.prepare(`
+            UPDATE vocabulary
+            SET status = 'new', correctCount = 0, errorCount = errorCount + 1, lastReviewedAt = ?, updatedAt = ?
+            WHERE id = ?
+          `).run(today, today, id);
+          
+          db.prepare(`
+            INSERT INTO word_error_logs (id, vocabularyId, date)
+            VALUES (?, ?, ?)
+          `).run(
+            Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+            id,
+            today
+          );
+        }
+      }
+    }
+
+    if (correctWordIds && correctWordIds.length > 0) {
+      for (const id of correctWordIds) {
+        const vocab = db.prepare('SELECT * FROM vocabulary WHERE id = ?').get(id) as any;
+        if (vocab) {
+          const newCorrectCount = vocab.correctCount + 1;
+          if (newCorrectCount >= 3) {
             db.prepare(`
               UPDATE vocabulary
-              SET status = 'mastered', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
+              SET status = 'reviewed', correctCount = ?, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(today, today, id);
-          } else if (vocab.status === 'new') {
-            db.prepare(`
-              UPDATE vocabulary
-              SET status = 'reviewed', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
-              WHERE id = ?
-            `).run(today, today, id);
+            `).run(newCorrectCount, today, today, id);
           } else {
             db.prepare(`
               UPDATE vocabulary
-              SET correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
+              SET correctCount = ?, status = 'reviewed', lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(today, today, id);
+            `).run(newCorrectCount, today, today, id);
           }
         }
       }
-    });
-
-    if (errorWordIds && errorWordIds.length > 0) {
-      updateCorrect(errorWordIds);
     }
 
     const updateFields: string[] = ['lastStudyDate = ?'];
@@ -443,6 +473,7 @@ router.post('/daily-task/complete', (req, res) => {
 
     res.json({ message: '任务完成' });
   } catch (error) {
+    console.error('完成任务失败:', error);
     res.status(500).json({ error: '完成任务失败' });
   }
 });
@@ -497,6 +528,74 @@ router.get('/statistics', (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: '获取统计失败' });
+  }
+});
+
+router.get('/daily-task/history', (req, res) => {
+  try {
+    const grade = req.query.grade as string;
+    const studentId = req.query.studentId as string;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 30;
+
+    const tasks = db.prepare(`
+      SELECT * FROM daily_tasks 
+      WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND completed = 1
+      ORDER BY date DESC
+      LIMIT ?
+    `).all(Number(grade), studentId || null, limit);
+
+    res.json(tasks);
+  } catch (error) {
+    console.error('获取历史失败:', error);
+    res.status(500).json({ error: '获取历史失败' });
+  }
+});
+
+router.get('/vocabulary/:id/error-logs', (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const logs = db.prepare(`
+      SELECT * FROM word_error_logs 
+      WHERE vocabularyId = ?
+      ORDER BY date DESC
+    `).all(id);
+
+    res.json(logs);
+  } catch (error) {
+    console.error('获取错误记录失败:', error);
+    res.status(500).json({ error: '获取错误记录失败' });
+  }
+});
+
+router.get('/vocabulary/:id/stats', (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const vocab = db.prepare('SELECT * FROM vocabulary WHERE id = ?').get(id) as any;
+    
+    if (!vocab) {
+      res.status(404).json({ error: '词汇不存在' });
+      return;
+    }
+
+    const errorLogs = db.prepare(`
+      SELECT * FROM word_error_logs 
+      WHERE vocabularyId = ?
+      ORDER BY date DESC
+      LIMIT 10
+    `).all(id);
+
+    const errorDates = errorLogs.map((log: any) => log.date);
+
+    res.json({
+      ...vocab,
+      errorDates,
+      totalErrors: vocab.errorCount
+    });
+  } catch (error) {
+    console.error('获取词汇统计失败:', error);
+    res.status(500).json({ error: '获取词汇统计失败' });
   }
 });
 

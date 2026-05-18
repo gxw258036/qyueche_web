@@ -67,7 +67,11 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ words, studentId })
-      }).then(res => res.json())
+      }).then(res => res.json()),
+    getErrorLogs: (id: string) =>
+      fetch(`${API_BASE}/vocabulary/${id}/error-logs`).then(res => res.json()),
+    getStats: (id: string) =>
+      fetch(`${API_BASE}/vocabulary/${id}/stats`).then(res => res.json())
   },
 
   dailyTask: {
@@ -83,12 +87,19 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ grade, studentId })
       }).then(res => res.json()) as Promise<DailyTask>,
-    complete: (taskId: string, errorWordIds: string[], studentId?: string) =>
+    complete: (taskId: string, errorWordIds: string[], correctWordIds: string[], studentId?: string, totalCount?: number) =>
       fetch(`${API_BASE}/daily-task/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId, errorWordIds, studentId })
-      }).then(res => res.json())
+        body: JSON.stringify({ taskId, errorWordIds, correctWordIds, studentId, totalCount })
+      }).then(res => res.json()),
+    getHistory: (grade: number, studentId?: string, limit?: number) => {
+      const query = new URLSearchParams();
+      query.set('grade', grade.toString());
+      if (studentId) query.set('studentId', studentId);
+      if (limit) query.set('limit', limit.toString());
+      return fetch(`${API_BASE}/daily-task/history?${query}`).then(res => res.json());
+    }
   },
 
   statistics: {
