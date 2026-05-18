@@ -1,10 +1,9 @@
-
 import { Vocabulary } from '@/types';
 
-const generateId = () =&gt; Math.random().toString(36).substr(2, 9);
+const generateId = () => Math.random().toString(36).substr(2, 9);
 const today = new Date().toISOString().split('T')[0];
 
-const grade2Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
+const grade2Words: Omit<Vocabulary, 'id' | 'addedAt'>[] = [
   { word: 'apple', meaning: '苹果', grade: 2, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'banana', meaning: '香蕉', grade: 2, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'book', meaning: '书', grade: 2, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
@@ -41,7 +40,7 @@ const grade2Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
   { word: 'five', meaning: '五', grade: 2, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
 ];
 
-const grade3Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
+const grade3Words: Omit<Vocabulary, 'id' | 'addedAt'>[] = [
   { word: 'animal', meaning: '动物', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'beautiful', meaning: '美丽的', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'classroom', meaning: '教室', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
@@ -64,7 +63,6 @@ const grade3Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
   { word: 'umbrella', meaning: '雨伞', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'vegetable', meaning: '蔬菜', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'window', meaning: '窗户', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'yellow', meaning: '黄色', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'zebra', meaning: '斑马', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'breakfast', meaning: '早餐', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'lunch', meaning: '午餐', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
@@ -78,7 +76,7 @@ const grade3Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
   { word: 'run', meaning: '跑', grade: 3, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
 ];
 
-const grade4Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
+const grade4Words: Omit<Vocabulary, 'id' | 'addedAt'>[] = [
   { word: 'accident', meaning: '事故', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'believe', meaning: '相信', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'camera', meaning: '照相机', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
@@ -92,29 +90,25 @@ const grade4Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
   { word: 'knowledge', meaning: '知识', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'language', meaning: '语言', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'medicine', meaning: '药', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'november', meaning: '十一月', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'opinion', meaning: '意见', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'practice', meaning: '练习', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'quietly', meaning: '安静地', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'remember', meaning: '记得', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'science', meaning: '科学', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'technology', meaning: '技术', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'university', meaning: '大学', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'vacation', meaning: '假期', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'wonderful', meaning: '精彩的', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'yourself', meaning: '你自己', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'because', meaning: '因为', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'before', meaning: '在...之前', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'between', meaning: '在...之间', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'both', meaning: '两者都', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'bring', meaning: '带来', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'build', meaning: '建造', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'business', meaning: '商业', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'careful', meaning: '小心的', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'catch', meaning: '抓住', grade: 4, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
 ];
 
-const grade5Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
+const grade5Words: Omit<Vocabulary, 'id' | 'addedAt'>[] = [
   { word: 'achievement', meaning: '成就', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'benefit', meaning: '利益', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'communication', meaning: '交流', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
@@ -124,7 +118,6 @@ const grade5Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
   { word: 'foreign', meaning: '外国的', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'government', meaning: '政府', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'improve', meaning: '提高', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'international', meaning: '国际的', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'knowledgeable', meaning: '有知识的', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'literature', meaning: '文学', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'modern', meaning: '现代的', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
@@ -141,17 +134,14 @@ const grade5Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
   { word: 'abroad', meaning: '在国外', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'accept', meaning: '接受', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'achieve', meaning: '实现', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'actually', meaning: '实际上', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'advice', meaning: '建议', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'afford', meaning: '买得起', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'although', meaning: '虽然', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'amazing', meaning: '令人惊讶的', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'ancient', meaning: '古代的', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'answer', meaning: '回答', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'anxious', meaning: '焦虑的', grade: 5, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
 ];
 
-const grade6Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
+const grade6Words: Omit<Vocabulary, 'id' | 'addedAt'>[] = [
   { word: 'accomplish', meaning: '完成', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'beneficial', meaning: '有益的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'circumstance', meaning: '情况', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
@@ -159,11 +149,7 @@ const grade6Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
   { word: 'encourage', meaning: '鼓励', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'fascinating', meaning: '迷人的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'gratitude', meaning: '感激', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'hypothesis', meaning: '假设', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'incredible', meaning: '难以置信的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'justification', meaning: '理由', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'knowledge', meaning: '知识', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'legislation', meaning: '立法', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'magnificent', meaning: '宏伟的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'negotiate', meaning: '谈判', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'obligation', meaning: '义务', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
@@ -173,22 +159,16 @@ const grade6Words: Omit&lt;Vocabulary, 'id' | 'addedAt'&gt;[] = [
   { word: 'significance', meaning: '意义', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'theoretical', meaning: '理论的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'unprecedented', meaning: '前所未有的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'vacancy', meaning: '空缺', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'willingness', meaning: '愿意', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'xenophobia', meaning: '排外', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'yesterday', meaning: '昨天', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'zealous', meaning: '热情的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'abundant', meaning: '丰富的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'accelerate', meaning: '加速', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'accommodate', meaning: '容纳', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'accompany', meaning: '陪伴', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'accomplished', meaning: '有成就的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
   { word: 'accurate', meaning: '准确的', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'achievements', meaning: '成就', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
-  { word: 'acknowledge', meaning: '承认', grade: 6, status: 'new', correctCount: 0, errorCount: 0, isCustom: false },
 ];
 
-export const getInitialVocabulary = (): Vocabulary[] =&gt; {
+export const getInitialVocabulary = (): Vocabulary[] => {
   const allWords = [
     ...grade2Words,
     ...grade3Words,
@@ -197,7 +177,7 @@ export const getInitialVocabulary = (): Vocabulary[] =&gt; {
     ...grade6Words,
   ];
 
-  return allWords.map(word =&gt; ({
+  return allWords.map(word => ({
     ...word,
     id: generateId(),
     addedAt: today,

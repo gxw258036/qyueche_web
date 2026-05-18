@@ -16,11 +16,16 @@ const Vocabulary: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'reviewed' | 'mastered' | 'error'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingWord, setEditingWord] = useState<VocabularyType | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    word: string;
+    meaning: string;
+    grade: number;
+    status: 'new' | 'reviewed' | 'mastered' | 'error';
+  }>({
     word: '',
     meaning: '',
     grade: settings.currentGrade,
-    status: 'new' as const,
+    status: 'new',
   });
   const [bulkInput, setBulkInput] = useState('');
   const [showBulkModal, setShowBulkModal] = useState(false);
