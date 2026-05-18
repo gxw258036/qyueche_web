@@ -234,6 +234,7 @@ router.post('/vocabulary/bulk-delete', (req, res) => {
     res.status(500).json({ error: '批量删除失败' });
   }
 });
+
 router.post('/vocabulary/bulk', (req, res) => {
   try {
     const words = req.body.words;
