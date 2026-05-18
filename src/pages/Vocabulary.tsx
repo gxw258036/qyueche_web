@@ -7,7 +7,6 @@ const Vocabulary: React.FC = () => {
   const {
     settings,
     vocabulary,
-    initialize,
     loadVocabulary,
     addVocabulary,
     updateVocabulary,
@@ -36,7 +35,6 @@ const Vocabulary: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      await initialize();
       await loadVocabulary();
       setLoading(false);
     };
@@ -45,23 +43,24 @@ const Vocabulary: React.FC = () => {
 
   useEffect(() => {
     if (!loading) {
-      loadVocabulary(settings.currentGrade, statusFilter === 'all' ? undefined : statusFilter, searchTerm || undefined);
+      loadVocabulary(settings.currentGrade);
     }
-  }, [settings.currentGrade, statusFilter, searchTerm, loading]);
+  }, [settings.currentGrade, loading]);
 
-  const filteredVocabulary = vocabulary;
+  const filteredVocabulary = vocabulary.filter(word => {
+    const matchesSearch = !searchTerm || 
+      word.word.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      word.meaning.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || word.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingWord) {
-      await updateVocabulary(editingWord.id, formData);
+      await updateVocabulary(editingWord.id, formData.word, formData.meaning, formData.grade, formData.status);
     } else {
-      await addVocabulary({
-        ...formData,
-        correctCount: 0,
-        errorCount: 0,
-        isCustom: true,
-      });
+      await addVocabulary(formData.word, formData.meaning, formData.grade);
     }
     resetForm();
     setShowAddModal(false);

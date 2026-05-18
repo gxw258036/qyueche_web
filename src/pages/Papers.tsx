@@ -3,10 +3,9 @@ import { useStore } from '@/store/useStore';
 import { FileText, AlertCircle, Download, Printer, Eye } from 'lucide-react';
 import { Vocabulary } from '@/types';
 import { generatePDF, printPaper } from '@/utils/pdf';
-import { api } from '@/services/api';
 
 const Papers: React.FC = () => {
-  const { settings, vocabulary, dailyTask, initialize, loadVocabulary } = useStore();
+  const { settings, vocabulary, dailyTask, loadVocabulary, loadDailyTask } = useStore();
 
   const [paperType, setPaperType] = useState<'daily' | 'error' | 'custom'>('daily');
   const [showAnswers, setShowAnswers] = useState(false);
@@ -17,8 +16,8 @@ const Papers: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      await initialize();
       await loadVocabulary();
+      await loadDailyTask();
       setLoading(false);
     };
     init();

@@ -8,9 +8,9 @@ const Daily: React.FC = () => {
   const {
     settings,
     dailyTask,
-    initialize,
     generateDailyTask,
     completeDailyTask,
+    loadDailyTask,
   } = useStore();
   
   const [selectedErrors, setSelectedErrors] = useState<string[]>([]);
@@ -19,7 +19,7 @@ const Daily: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      await initialize();
+      await loadDailyTask();
       setLoading(false);
     };
     init();
@@ -27,7 +27,7 @@ const Daily: React.FC = () => {
 
   useEffect(() => {
     if (!loading && !dailyTask) {
-      generateDailyTask(settings.currentGrade);
+      generateDailyTask();
     }
     if (dailyTask?.markedErrorWords) {
       setSelectedErrors(dailyTask.markedErrorWords);
@@ -52,10 +52,8 @@ const Daily: React.FC = () => {
   };
 
   const handleSaveErrors = async () => {
-    if (dailyTask) {
-      await completeDailyTask(dailyTask.id, selectedErrors);
-      setIsComplete(true);
-    }
+    await completeDailyTask(selectedErrors);
+    setIsComplete(true);
   };
 
   const handleGeneratePDF = async () => {
@@ -72,7 +70,7 @@ const Daily: React.FC = () => {
 
   const handleRegenerate = async () => {
     if (window.confirm('确定要重新生成今日任务吗？')) {
-      await generateDailyTask(settings.currentGrade);
+      await generateDailyTask();
       setSelectedErrors([]);
       setIsComplete(false);
     }

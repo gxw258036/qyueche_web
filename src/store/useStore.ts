@@ -1,146 +1,216 @@
 import { create } from 'zustand';
+import { Vocabulary, DailyTask, Settings, Statistics, Student } from '@/types';
 import { api } from '@/services/api';
-import { Vocabulary, Settings, DailyTask } from '@/types';
 
-interface AppState {
+interface Store {
+  students: Student[];
+  currentStudent: Student | null;
   vocabulary: Vocabulary[];
-  settings: Settings;
   dailyTask: DailyTask | null;
-  loading: boolean;
+  settings: Settings;
+  statistics: Statistics | null;
+  isLoading: boolean;
   error: string | null;
 
-  initialize: () => Promise<void>;
-  loadVocabulary: (grade?: number, status?: string, search?: string) => Promise<void>;
-  addVocabulary: (word: Omit<Vocabulary, 'id' | 'addedAt'>) => Promise<void>;
-  updateVocabulary: (id: string, updates: Partial<Vocabulary>) => Promise<void>;
+  loadStudents: () => Promise<void>;
+  addStudent: (name: string, grade: number) => Promise<void>;
+  updateStudent: (id: string, name: string, grade: number) => Promise<void>;
+  deleteStudent: (id: string) => Promise<void>;
+  setCurrentStudent: (student: Student | null) => void;
+
+  loadVocabulary: (grade?: number, studentId?: string) => Promise<void>;
+  addVocabulary: (word: string, meaning: string, grade: number, studentId?: string) => Promise<void>;
+  updateVocabulary: (id: string, word: string, meaning: string, grade: number, status: string) => Promise<void>;
   deleteVocabulary: (id: string) => Promise<void>;
-  bulkAddVocabulary: (words: { word: string; meaning: string; grade: number }[]) => Promise<void>;
-  
-  updateSettings: (updates: Partial<Settings>) => Promise<void>;
-  generateDailyTask: (grade: number) => Promise<DailyTask>;
-  completeDailyTask: (taskId: string, errorWordIds: string[]) => Promise<void>;
-  loadStatistics: (grade: number) => Promise<any>;
+  bulkAddVocabulary: (words: { word: string; meaning: string; grade: number }[], studentId?: string) => Promise<void>;
+
+  loadDailyTask: () => Promise<void>;
+  generateDailyTask: () => Promise<void>;
+  completeDailyTask: (errorWordIds: string[]) => Promise<void>;
+
+  loadSettings: () => Promise<void>;
+  updateSettings: (currentGrade?: number, currentStudentId?: string) => Promise<void>;
+
+  loadStatistics: () => Promise<void>;
+
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  clearError: () => void;
 }
 
-export const useStore = create<AppState>((set, get) => ({
+export const useStore = create<Store>((set, get) => ({
+  students: [],
+  currentStudent: null,
   vocabulary: [],
-  settings: { currentGrade: 4, lastStudyDate: '' },
   dailyTask: null,
-  loading: false,
+  settings: { id: 1, currentGrade: 4 },
+  statistics: null,
+  isLoading: false,
   error: null,
 
-  initialize: async () => {
-    set({ loading: true, error: null });
+  loadStudents: async () => {
     try {
-      await api.init();
-      const settings = await api.settings.get();
-      set({ settings, loading: false });
+      const students = await api.students.getAll();
+      set({ students });
     } catch (error) {
-      set({ error: '初始化失败', loading: false });
+      set({ error: '获取学生列表失败' });
     }
   },
 
-  loadVocabulary: async (grade?: number, status?: string, search?: string) => {
-    set({ loading: true, error: null });
+  addStudent: async (name, grade) => {
     try {
-      const { settings } = get();
-      const vocab = await api.vocabulary.list({
-        grade: grade || settings.currentGrade,
-        status,
-        search,
-      });
-      set({ vocabulary: vocab, loading: false });
+      await api.students.create({ name, grade });
+      await get().loadStudents();
     } catch (error) {
-      set({ error: '加载词汇失败', loading: false });
+      set({ error: '添加学生失败' });
     }
   },
 
-  addVocabulary: async (word) => {
-    set({ loading: true, error: null });
+  updateStudent: async (id, name, grade) => {
     try {
-      await api.vocabulary.create(word);
+      await api.students.update(id, { name, grade });
+      await get().loadStudents();
+      const current = get().currentStudent;
+      if (current && current.id === id) {
+        set({ currentStudent: { ...current, name, grade } });
+      }
+    } catch (error) {
+      set({ error: '更新学生失败' });
+    }
+  },
+
+  deleteStudent: async (id) => {
+    try {
+      await api.students.delete(id);
+      await get().loadStudents();
+      const current = get().currentStudent;
+      if (current && current.id === id) {
+        set({ currentStudent: null });
+      }
+    } catch (error) {
+      set({ error: '删除学生失败' });
+    }
+  },
+
+  setCurrentStudent: (student) => {
+    set({ currentStudent: student });
+    if (student) {
+      get().updateSettings(student.grade, student.id);
+    }
+  },
+
+  loadVocabulary: async (grade, studentId) => {
+    try {
+      const effectiveGrade = grade ?? get().settings.currentGrade;
+      const effectiveStudentId = studentId ?? get().currentStudent?.id;
+      const vocabulary = await api.vocabulary.getAll({ grade: effectiveGrade, studentId: effectiveStudentId });
+      set({ vocabulary });
+    } catch (error) {
+      set({ error: '获取词汇失败' });
+    }
+  },
+
+  addVocabulary: async (word, meaning, grade, studentId) => {
+    try {
+      const effectiveStudentId = studentId ?? get().currentStudent?.id;
+      await api.vocabulary.create({ word, meaning, grade, studentId: effectiveStudentId });
       await get().loadVocabulary();
     } catch (error) {
-      set({ error: '添加词汇失败', loading: false });
+      set({ error: '添加词汇失败' });
     }
   },
 
-  updateVocabulary: async (id, updates) => {
-    set({ loading: true, error: null });
+  updateVocabulary: async (id, word, meaning, grade, status) => {
     try {
-      await api.vocabulary.update(id, updates as any);
+      await api.vocabulary.update(id, { word, meaning, grade, status });
       await get().loadVocabulary();
     } catch (error) {
-      set({ error: '更新词汇失败', loading: false });
+      set({ error: '更新词汇失败' });
     }
   },
 
   deleteVocabulary: async (id) => {
-    set({ loading: true, error: null });
     try {
       await api.vocabulary.delete(id);
       await get().loadVocabulary();
     } catch (error) {
-      set({ error: '删除词汇失败', loading: false });
+      set({ error: '删除词汇失败' });
     }
   },
 
-  bulkAddVocabulary: async (words) => {
-    set({ loading: true, error: null });
+  bulkAddVocabulary: async (words, studentId) => {
     try {
-      await api.vocabulary.bulkCreate(words);
+      const effectiveStudentId = studentId ?? get().currentStudent?.id;
+      await api.vocabulary.bulk(words, effectiveStudentId);
       await get().loadVocabulary();
     } catch (error) {
-      set({ error: '批量导入失败', loading: false });
+      set({ error: '批量添加词汇失败' });
     }
   },
 
-  updateSettings: async (updates) => {
-    set({ loading: true, error: null });
+  loadDailyTask: async () => {
     try {
-      if (updates.currentGrade !== undefined) {
-        await api.settings.update({ currentGrade: updates.currentGrade });
+      const { settings, currentStudent } = get();
+      const task = await api.dailyTask.get(settings.currentGrade, currentStudent?.id);
+      set({ dailyTask: task });
+    } catch (error) {
+      set({ error: '获取任务失败' });
+    }
+  },
+
+  generateDailyTask: async () => {
+    try {
+      const { settings, currentStudent } = get();
+      const task = await api.dailyTask.generate(settings.currentGrade, currentStudent?.id);
+      set({ dailyTask: task });
+    } catch (error) {
+      set({ error: '生成任务失败' });
+    }
+  },
+
+  completeDailyTask: async (errorWordIds) => {
+    try {
+      const { dailyTask, currentStudent } = get();
+      if (dailyTask) {
+        await api.dailyTask.complete(dailyTask.id, errorWordIds, currentStudent?.id);
+        await get().loadDailyTask();
+        await get().loadStatistics();
+        await get().loadVocabulary();
       }
-      set((state) => ({
-        settings: { ...state.settings, ...updates },
-        loading: false,
-      }));
     } catch (error) {
-      set({ error: '更新设置失败', loading: false });
+      set({ error: '完成任务失败' });
     }
   },
 
-  generateDailyTask: async (grade: number) => {
-    set({ loading: true, error: null });
+  loadSettings: async () => {
     try {
-      const task = await api.dailyTask.generate(grade);
-      set({ dailyTask: task, loading: false });
-      return task;
+      const settings = await api.settings.get();
+      set({ settings });
     } catch (error) {
-      set({ error: '生成任务失败', loading: false });
-      throw error;
+      set({ error: '获取设置失败' });
     }
   },
 
-  completeDailyTask: async (taskId: string, errorWordIds: string[]) => {
-    set({ loading: true, error: null });
+  updateSettings: async (currentGrade, currentStudentId) => {
     try {
-      await api.dailyTask.complete(taskId, errorWordIds);
-      set((state) => ({
-        dailyTask: state.dailyTask ? { ...state.dailyTask, completed: true, markedErrorWords: errorWordIds } : null,
-        loading: false,
-      }));
+      await api.settings.update({ currentGrade, currentStudentId });
+      await get().loadSettings();
     } catch (error) {
-      set({ error: '完成任务失败', loading: false });
+      set({ error: '更新设置失败' });
     }
   },
 
-  loadStatistics: async (grade: number) => {
+  loadStatistics: async () => {
     try {
-      return await api.statistics.get(grade);
+      const { settings, currentStudent } = get();
+      const stats = await api.statistics.get(settings.currentGrade, currentStudent?.id);
+      set({ statistics: stats });
     } catch (error) {
-      set({ error: '加载统计失败' });
-      throw error;
+      set({ error: '获取统计失败' });
     }
   },
+
+  setLoading: (loading) => set({ isLoading: loading }),
+  setError: (error) => set({ error }),
+  clearError: () => set({ error: null }),
 }));

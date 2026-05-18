@@ -6,24 +6,22 @@ import { GRADE_CONFIGS } from '@/types';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { settings, vocabulary, initialize, updateSettings, loadVocabulary, dailyTask, loadStatistics } = useStore();
+  const { settings, vocabulary, updateSettings, dailyTask, statistics, loadVocabulary } = useStore();
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    initialize().then(() => {
-      loadVocabulary();
-      loadStatistics(settings.currentGrade).then(setStats);
-    });
+    loadVocabulary();
+    setStats(statistics);
   }, []);
 
   useEffect(() => {
-    if (settings.currentGrade) {
-      loadStatistics(settings.currentGrade).then(setStats);
+    if (statistics) {
+      setStats(statistics);
     }
-  }, [settings.currentGrade]);
+  }, [statistics]);
 
   const handleGradeChange = async (grade: number) => {
-    await updateSettings({ currentGrade: grade });
+    await updateSettings(grade);
   };
 
   const handleGenerateToday = async () => {

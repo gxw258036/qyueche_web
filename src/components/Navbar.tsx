@@ -1,89 +1,205 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, Book, FileText, BarChart3, Menu, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useStore } from '@/store/useStore';
+import { BookOpen, Home, FileText, Users, BarChart3, ChevronDown, Plus, X } from 'lucide-react';
+import { Student } from '@/types';
 
 const Navbar: React.FC = () => {
-  const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { currentStudent, students, settings, loadStudents, loadSettings } = useStore();
+  const [showStudentMenu, setShowStudentMenu] = useState(false);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentGrade, setNewStudentGrade] = useState('2');
+
+  useEffect(() => {
+    loadStudents();
+    loadSettings();
+  }, []);
+
+  const handleAddStudent = () => {
+    if (newStudentName.trim()) {
+      console.log('Add student:', { name: newStudentName, grade: newStudentGrade });
+      setNewStudentName('');
+      setShowAddStudentModal(false);
+      loadStudents();
+    }
+  };
+
+  const handleSelectStudent = async (student: Student) => {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ currentStudentId: student.id }),
+    });
+    window.location.reload();
+  };
 
   const navItems = [
-    { path: '/', icon: Home, label: '首页' },
-    { path: '/daily', icon: Book, label: '每日默写' },
-    { path: '/vocabulary', icon: FileText, label: '词汇管理' },
-    { path: '/papers', icon: FileText, label: '试卷中心' },
-    { path: '/statistics', icon: BarChart3, label: '数据统计' },
+    { path: '/', label: '首页', icon: Home },
+    { path: '/daily', label: '每日默写', icon: BookOpen },
+    { path: '/vocabulary', label: '词汇管理', icon: FileText },
+    { path: '/papers', label: '试卷中心', icon: FileText },
+    { path: '/statistics', label: '学习统计', icon: BarChart3 },
+    { path: '/students', label: '学生管理', icon: Users },
   ];
 
   return (
-    <nav className="bg-gradient-to-r from-orange-500 to-blue-600 text-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold">
-              📚 小学英语默写工具
-            </Link>
+    <>
+      <nav className="bg-white shadow-lg">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <BookOpen className="text-orange-500" size={28} />
+                <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent">
+                  英语默写助手
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <button
+                  onClick={() => setShowStudentMenu(!showStudentMenu)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  <Users size={20} className="text-gray-600" />
+                  <span className="font-medium text-gray-700">
+                    {currentStudent?.name || '选择学生'}
+                  </span>
+                  <ChevronDown size={18} className="text-gray-500" />
+                </button>
+
+                {showStudentMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                    <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
+                      选择学生
+                    </div>
+                    {students.map((student) => (
+                      <button
+                        key={student.id}
+                        onClick={() => handleSelectStudent(student)}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
+                          currentStudent?.id === student.id ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <span className="font-medium text-gray-700">{student.name}</span>
+                        <span className="text-sm text-gray-500">{student.grade}年级</span>
+                      </button>
+                    ))}
+                    <div className="border-t border-gray-100 mt-2 pt-2">
+                      <button
+                        onClick={() => {
+                          setShowStudentMenu(false);
+                          setShowAddStudentModal(true);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-green-600"
+                      >
+                        <Plus size={16} />
+                        添加学生
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {currentStudent && (
+                <span className="text-sm text-gray-500">
+                  {currentStudent.grade}年级
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
+          <div className="border-t border-gray-100">
+            <div className="flex items-center gap-1 overflow-x-auto py-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = location.pathname === item.path;
+                const isActive = window.location.pathname === item.path;
                 return (
-                  <Link
+                  <a
                     key={item.path}
-                    to={item.path}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    href={item.path}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
                       isActive
-                        ? 'bg-white/20 text-white'
-                        : 'text-white/80 hover:bg-white/10 hover:text-white'
+                        ? 'bg-gradient-to-r from-orange-500 to-blue-600 text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
                     <Icon size={18} />
-                    {item.label}
-                  </Link>
+                    <span className="font-medium">{item.label}</span>
+                  </a>
                 );
               })}
             </div>
           </div>
-
-          <div className="md:hidden">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-white hover:text-white/80"
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
         </div>
-      </div>
+      </nav>
 
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-orange-600">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium ${
-                    isActive
-                      ? 'bg-white/20 text-white'
-                      : 'text-white/80 hover:bg-white/10'
-                  }`}
+      {showAddStudentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-800">添加学生</h2>
+              <button
+                onClick={() => setShowAddStudentModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  学生姓名
+                </label>
+                <input
+                  type="text"
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="请输入学生姓名"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  年级
+                </label>
+                <select
+                  value={newStudentGrade}
+                  onChange={(e) => setNewStudentGrade(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 >
-                  <Icon size={18} />
-                  {item.label}
-                </Link>
-              );
-            })}
+                  <option value="2">二年级</option>
+                  <option value="3">三年级</option>
+                  <option value="4">四年级</option>
+                  <option value="5">五年级</option>
+                  <option value="6">六年级</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowAddStudentModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleAddStudent}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700"
+                >
+                  添加
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
-    </nav>
+    </>
   );
 };
 

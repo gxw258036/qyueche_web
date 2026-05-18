@@ -3,13 +3,12 @@ import { useStore } from '@/store/useStore';
 import { TrendingUp, BookOpen, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
 
 const Statistics: React.FC = () => {
-  const { settings, vocabulary, initialize, loadVocabulary, loadStatistics } = useStore();
+  const { settings, vocabulary, statistics, loadVocabulary, loadStatistics } = useStore();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
-      await initialize();
       await loadVocabulary();
       setLoading(false);
     };
@@ -18,9 +17,15 @@ const Statistics: React.FC = () => {
 
   useEffect(() => {
     if (!loading) {
-      loadStatistics(settings.currentGrade).then(setStats);
+      loadStatistics();
     }
   }, [settings.currentGrade, vocabulary, loading]);
+
+  useEffect(() => {
+    if (statistics) {
+      setStats(statistics);
+    }
+  }, [statistics]);
 
   if (loading) {
     return (
