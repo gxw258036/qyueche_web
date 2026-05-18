@@ -218,6 +218,23 @@ router.delete('/vocabulary/:id', (req, res) => {
   }
 });
 
+router.post('/vocabulary/bulk-delete', (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: '请选择要删除的词汇' });
+      return;
+    }
+
+    const placeholders = ids.map(() => '?').join(',');
+    const result = db.prepare(`DELETE FROM vocabulary WHERE id IN (${placeholders})`).run(...ids);
+    
+    res.json({ message: `成功删除 ${result.changes} 个词汇` });
+  } catch (error) {
+    res.status(500).json({ error: '批量删除失败' });
+  }
+});
+
 router.post('/vocabulary/bulk', (req, res) => {
   try {
     const words = req.body.words;

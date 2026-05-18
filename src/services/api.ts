@@ -56,6 +56,12 @@ export const api = {
       }).then(res => res.json()),
     delete: (id: string) =>
       fetch(`${API_BASE}/vocabulary/${id}`, { method: 'DELETE' }).then(res => res.json()),
+    bulkDelete: (ids: string[]) =>
+      fetch(`${API_BASE}/vocabulary/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      }).then(res => res.json()),
     bulk: (words: { word: string; meaning: string; grade: number }[], studentId?: string) =>
       fetch(`${API_BASE}/vocabulary/bulk`, {
         method: 'POST',

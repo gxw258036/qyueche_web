@@ -22,6 +22,7 @@ interface Store {
   addVocabulary: (word: string, meaning: string, grade: number, studentId?: string) => Promise<void>;
   updateVocabulary: (id: string, word: string, meaning: string, grade: number, status: string) => Promise<void>;
   deleteVocabulary: (id: string) => Promise<void>;
+  bulkDeleteVocabulary: (ids: string[]) => Promise<void>;
   bulkAddVocabulary: (words: { word: string; meaning: string; grade: number }[], studentId?: string) => Promise<void>;
 
   loadDailyTask: () => Promise<void>;
@@ -137,6 +138,15 @@ export const useStore = create<Store>((set, get) => ({
       await get().loadVocabulary();
     } catch (error) {
       set({ error: '删除词汇失败' });
+    }
+  },
+
+  bulkDeleteVocabulary: async (ids) => {
+    try {
+      await api.vocabulary.bulkDelete(ids);
+      await get().loadVocabulary();
+    } catch (error) {
+      set({ error: '批量删除词汇失败' });
     }
   },
 
