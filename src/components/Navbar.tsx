@@ -34,7 +34,7 @@ const Navbar: React.FC = () => {
 
   const handleSelectStudent = async (student: Student) => {
     try {
-      await api.settings.update({ currentStudentId: student.id });
+      await api.settings.update({ currentStudentId: student.id, currentGrade: student.grade });
       window.location.reload();
     } catch (error) {
       console.error('切换学生失败:', error);

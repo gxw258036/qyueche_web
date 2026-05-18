@@ -73,6 +73,8 @@ export const useStore = create<Store>((set, get) => ({
       const current = get().currentStudent;
       if (current && current.id === id) {
         set({ currentStudent: { ...current, name, grade } });
+        await api.settings.update({ currentGrade: grade });
+        await get().loadSettings();
       }
     } catch (error) {
       set({ error: '更新学生失败' });
