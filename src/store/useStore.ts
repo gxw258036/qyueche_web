@@ -185,7 +185,14 @@ export const useStore = create<Store>((set, get) => ({
   loadSettings: async () => {
     try {
       const settings = await api.settings.get();
-      set({ settings });
+      let currentStudent: Student | null = null;
+      
+      if (settings.currentStudentId) {
+        const students = await api.students.getAll();
+        currentStudent = students.find(s => s.id === settings.currentStudentId) || null;
+      }
+      
+      set({ settings, currentStudent });
     } catch (error) {
       set({ error: '获取设置失败' });
     }

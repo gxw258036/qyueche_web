@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { BookOpen, Home, FileText, Users, BarChart3, ChevronDown, Plus, X } from 'lucide-react';
 import { Student } from '@/types';
+import { api } from '@/services/api';
 
 const Navbar: React.FC = () => {
   const { currentStudent, students, settings, loadStudents, loadSettings } = useStore();
@@ -15,24 +16,29 @@ const Navbar: React.FC = () => {
     loadSettings();
   }, []);
 
-  const handleAddStudent = () => {
+  const handleAddStudent = async () => {
     if (newStudentName.trim()) {
-      console.log('Add student:', { name: newStudentName, grade: newStudentGrade });
-      setNewStudentName('');
-      setShowAddStudentModal(false);
-      loadStudents();
+      try {
+        await api.students.create({ 
+          name: newStudentName, 
+          grade: parseInt(newStudentGrade) 
+        });
+        setNewStudentName('');
+        setShowAddStudentModal(false);
+        await loadStudents();
+      } catch (error) {
+        console.error('添加学生失败:', error);
+      }
     }
   };
 
   const handleSelectStudent = async (student: Student) => {
-    await fetch('/api/settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ currentStudentId: student.id }),
-    });
-    window.location.reload();
+    try {
+      await api.settings.update({ currentStudentId: student.id });
+      window.location.reload();
+    } catch (error) {
+      console.error('切换学生失败:', error);
+    }
   };
 
   const navItems = [
