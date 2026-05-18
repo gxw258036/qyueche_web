@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import db from './database.js';
-import { initializeVocabulary } from './initData.js';
+import db from './database';
+import { initializeVocabulary } from './initData';
 
 const router = Router();
 
@@ -32,7 +32,10 @@ router.put('/settings', (req, res) => {
 
 router.get('/vocabulary', (req, res) => {
   try {
-    const { grade, status, search } = req.query;
+    const grade = req.query.grade as string;
+    const status = req.query.status as string;
+    const search = req.query.search as string;
+    
     let query = 'SELECT * FROM vocabulary WHERE 1=1';
     const params: any[] = [];
     
@@ -48,7 +51,7 @@ router.get('/vocabulary', (req, res) => {
     
     if (search) {
       query += ' AND (word LIKE ? OR meaning LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      params.push('%' + search + '%', '%' + search + '%');
     }
     
     query += ' ORDER BY addedAt DESC';
@@ -107,7 +110,7 @@ router.delete('/vocabulary/:id', (req, res) => {
 
 router.post('/vocabulary/bulk', (req, res) => {
   try {
-    const { words } = req.body;
+    const words = req.body.words;
     const today = new Date().toISOString().split('T')[0];
     let count = 0;
     
@@ -125,7 +128,7 @@ router.post('/vocabulary/bulk', (req, res) => {
     });
     
     insertMany(words);
-    res.json({ message: `成功导入 ${count} 个词汇` });
+    res.json({ message: '成功导入 ' + count + ' 个词汇' });
   } catch (error) {
     res.status(500).json({ error: '批量导入失败' });
   }
@@ -133,7 +136,7 @@ router.post('/vocabulary/bulk', (req, res) => {
 
 router.get('/daily-task', (req, res) => {
   try {
-    const { grade } = req.query;
+    const grade = req.query.grade as string;
     const today = new Date().toISOString().split('T')[0];
     
     const task = db.prepare('SELECT * FROM daily_tasks WHERE date = ? AND grade = ?')
@@ -205,17 +208,16 @@ router.post('/daily-task/generate', (req, res) => {
       LIMIT ?
     `).all(Number(grade), cfg.reviewCount);
     
-    const reviewPool = [...errorWords, ...reviewedWords];
+    const reviewPool: any[] = [...errorWords, ...reviewedWords];
     let selectedReview = reviewPool.slice(0, cfg.reviewCount);
     
     if (selectedReview.length < cfg.reviewCount) {
       const extra = db.prepare(`
         SELECT * FROM vocabulary 
         WHERE grade = ? AND status NOT IN ('new')
-        AND id NOT IN (${selectedReview.map(() => '?').join(',') || "''"})
         ORDER BY RANDOM() 
         LIMIT ?
-      `).all(Number(grade), ...selectedReview.map((w: any) => w.id), cfg.reviewCount - selectedReview.length);
+      `).all(Number(grade), cfg.reviewCount - selectedReview.length);
       selectedReview = [...selectedReview, ...extra];
     }
     
@@ -293,7 +295,9 @@ router.post('/daily-task/complete', (req, res) => {
       }
     });
     
-    updateCorrect(errorWordIds || []);
+    if (errorWordIds && errorWordIds.length > 0) {
+      updateCorrect(errorWordIds);
+    }
     
     db.prepare(`
       UPDATE settings SET lastStudyDate = ?, updatedAt = ? WHERE id = 1
@@ -307,7 +311,7 @@ router.post('/daily-task/complete', (req, res) => {
 
 router.get('/statistics', (req, res) => {
   try {
-    const { grade } = req.query;
+    const grade = req.query.grade as string;
     
     const stats = {
       total: 0,

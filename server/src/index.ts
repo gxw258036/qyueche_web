@@ -1,14 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
-import db from './database.js';
-import { initializeVocabulary } from './initData.js';
-import router from './routes.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import db from './database';
+import { initializeVocabulary } from './initData';
+import router from './routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,7 +18,7 @@ const distPath = path.join(__dirname, '../../dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
   
-  app.get('*', (req, res) => {
+  app.get('*', (req: express.Request, res: express.Response) => {
     if (!req.path.startsWith('/api')) {
       res.sendFile(path.join(distPath, 'index.html'));
     }
@@ -36,7 +32,7 @@ if (fs.existsSync(distPath)) {
 initializeVocabulary();
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 小学英语默写工具服务器已启动`);
+  console.log('\n🚀 小学英语默写工具服务器已启动');
   console.log(`   访问地址: http://localhost:${PORT}`);
   console.log(`   API接口: http://localhost:${PORT}/api`);
   console.log(`   数据库: ./data/vocabulary.db\n`);

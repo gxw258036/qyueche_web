@@ -1,4 +1,4 @@
-import db from './database.js';
+import db from './database';
 
 const today = new Date().toISOString().split('T')[0];
 
