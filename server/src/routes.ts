@@ -413,10 +413,11 @@ router.post('/daily-task/generate', (req, res) => {
       DELETE FROM daily_tasks WHERE date = ? AND grade = ? AND (studentId = ? OR studentId IS NULL)
     `).run(today, Number(grade), studentId || null);
 
+    const totalCount = finalNewWords.length + finalReviewedWords.length;
     db.prepare(`
-      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords, newWords, reviewedWords)
-      VALUES (?, ?, ?, ?, 0, '[]', ?, ?)
-    `).run(taskId, today, Number(grade), studentId || null, JSON.stringify(finalNewWords), JSON.stringify(finalReviewedWords));
+      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords, newWords, reviewedWords, totalCount)
+      VALUES (?, ?, ?, ?, 0, '[]', ?, ?, ?)
+    `).run(taskId, today, Number(grade), studentId || null, JSON.stringify(finalNewWords), JSON.stringify(finalReviewedWords), totalCount);
 
     res.json({
       id: taskId,
@@ -425,6 +426,7 @@ router.post('/daily-task/generate', (req, res) => {
       studentId,
       newWords: finalNewWords,
       reviewedWords: finalReviewedWords,
+      totalCount,
       completed: false,
       markedErrorWords: []
     });

@@ -41,6 +41,11 @@ db.exec(`
     studentId TEXT,
     completed INTEGER DEFAULT 0,
     markedErrorWords TEXT,
+    newWords TEXT,
+    reviewedWords TEXT,
+    correctCount INTEGER DEFAULT 0,
+    errorCount INTEGER DEFAULT 0,
+    totalCount INTEGER DEFAULT 0,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE,
     UNIQUE(date, grade, studentId)
@@ -64,6 +69,33 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_date ON daily_tasks(date);
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_studentId ON daily_tasks(studentId);
 `);
+
+// 为 daily_tasks 表添加缺失的字段
+try {
+  db.prepare('ALTER TABLE daily_tasks ADD COLUMN newWords TEXT').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+try {
+  db.prepare('ALTER TABLE daily_tasks ADD COLUMN reviewedWords TEXT').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+try {
+  db.prepare('ALTER TABLE daily_tasks ADD COLUMN correctCount INTEGER DEFAULT 0').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+try {
+  db.prepare('ALTER TABLE daily_tasks ADD COLUMN errorCount INTEGER DEFAULT 0').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+try {
+  db.prepare('ALTER TABLE daily_tasks ADD COLUMN totalCount INTEGER DEFAULT 0').run();
+} catch (e) {
+  // 列已存在，忽略
+}
 
 const initSettings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
 if (!initSettings) {
