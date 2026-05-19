@@ -41,6 +41,8 @@ db.exec(`
     studentId TEXT,
     completed INTEGER DEFAULT 0,
     markedErrorWords TEXT,
+    newWords TEXT,
+    reviewedWords TEXT,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE,
     UNIQUE(date, grade, studentId)
@@ -63,6 +65,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_vocabulary_studentId ON vocabulary(studentId);
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_date ON daily_tasks(date);
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_studentId ON daily_tasks(studentId);
+`);
+
+db.exec(`
+  ALTER TABLE daily_tasks ADD COLUMN IF NOT EXISTS newWords TEXT;
+  ALTER TABLE daily_tasks ADD COLUMN IF NOT EXISTS reviewedWords TEXT;
 `);
 
 const initSettings = db.prepare('SELECT * FROM settings WHERE id = 1').get();

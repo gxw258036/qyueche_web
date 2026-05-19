@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Vocabulary, DailyTask, Settings, Statistics, Student } from '@/types';
+import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory } from '@/types';
 import { api } from '@/services/api';
 
 interface Store {
@@ -7,6 +7,7 @@ interface Store {
   currentStudent: Student | null;
   vocabulary: Vocabulary[];
   dailyTask: DailyTask | null;
+  dailyTaskHistory: DailyTaskHistory[];
   settings: Settings;
   statistics: Statistics | null;
   isLoading: boolean;
@@ -28,6 +29,7 @@ interface Store {
   loadDailyTask: () => Promise<void>;
   generateDailyTask: () => Promise<void>;
   completeDailyTask: (errorWordIds: string[]) => Promise<void>;
+  loadDailyTaskHistory: (limit?: number) => Promise<DailyTaskHistory[]>;
 
   loadSettings: () => Promise<void>;
   updateSettings: (currentGrade?: number, currentStudentId?: string) => Promise<void>;
@@ -44,6 +46,7 @@ export const useStore = create<Store>((set, get) => ({
   currentStudent: null,
   vocabulary: [],
   dailyTask: null,
+  dailyTaskHistory: [],
   settings: { id: 1, currentGrade: 4 },
   statistics: null,
   isLoading: false,
@@ -191,6 +194,18 @@ export const useStore = create<Store>((set, get) => ({
       }
     } catch (error) {
       set({ error: '完成任务失败' });
+    }
+  },
+
+  loadDailyTaskHistory: async (limit = 30) => {
+    try {
+      const { settings, currentStudent } = get();
+      const history = await api.dailyTask.getHistory(settings.currentGrade, currentStudent?.id, limit);
+      set({ dailyTaskHistory: history });
+      return history;
+    } catch (error) {
+      set({ error: '获取历史记录失败' });
+      return [];
     }
   },
 

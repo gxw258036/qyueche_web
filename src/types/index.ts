@@ -1,3 +1,12 @@
+export interface DailyTaskHistory {
+  id: string;
+  date: string;
+  grade: number;
+  totalCount: number;
+  correctCount: number;
+  errorCount: number;
+}
+
 export interface Student {
   id: string;
   name: string;

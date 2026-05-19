@@ -277,15 +277,17 @@ router.get('/daily-task', (req, res) => {
         : [];
 
       const newWords = db.prepare(`
-        SELECT * FROM vocabulary WHERE id IN (
-          SELECT id FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'new' LIMIT 10
-        )
+        SELECT * FROM vocabulary 
+        WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'new' 
+        ORDER BY RANDOM()
+        LIMIT 10
       `).all(Number(grade), studentId || null);
 
       const reviewedWords = db.prepare(`
-        SELECT * FROM vocabulary WHERE id IN (
-          SELECT id FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status IN ('reviewed', 'mastered', 'error') LIMIT 20
-        )
+        SELECT * FROM vocabulary 
+        WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status IN ('reviewed', 'mastered', 'error') 
+        ORDER BY RANDOM()
+        LIMIT 20
       `).all(Number(grade), studentId || null);
 
       res.json({
@@ -361,9 +363,9 @@ router.post('/daily-task/generate', (req, res) => {
     `).run(today, Number(grade), studentId || null);
 
     db.prepare(`
-      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords)
-      VALUES (?, ?, ?, ?, 0, '[]')
-    `).run(taskId, today, Number(grade), studentId || null);
+      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords, newWords, reviewedWords)
+      VALUES (?, ?, ?, ?, 0, '[]', ?, ?)
+    `).run(taskId, today, Number(grade), studentId || null, JSON.stringify(newWordsResult), JSON.stringify(reviewedWordsResult));
 
     res.json({
       id: taskId,
@@ -383,7 +385,7 @@ router.post('/daily-task/generate', (req, res) => {
 
 router.post('/daily-task/complete', (req, res) => {
   try {
-    const { taskId, errorWordIds, studentId } = req.body;
+    const { taskId, errorWordIds = [], studentId } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     db.prepare(`
@@ -392,41 +394,64 @@ router.post('/daily-task/complete', (req, res) => {
       WHERE id = ?
     `).run(JSON.stringify(errorWordIds), taskId);
 
-    const updateVocab = db.prepare(`
+    const task = db.prepare('SELECT * FROM daily_tasks WHERE id = ?').get(taskId) as any;
+    const allWordIds: string[] = [];
+    
+    if (task.newWords) {
+      const newWords = JSON.parse(task.newWords);
+      allWordIds.push(...newWords.map((w: any) => w.id));
+    }
+    if (task.reviewedWords) {
+      const reviewedWords = JSON.parse(task.reviewedWords);
+      allWordIds.push(...reviewedWords.map((w: any) => w.id));
+    }
+
+    const correctWordIds = allWordIds.filter(id => !errorWordIds.includes(id));
+
+    const updateError = db.prepare(`
       UPDATE vocabulary
-      SET status = ?, errorCount = errorCount + 1, lastReviewedAt = ?, updatedAt = ?
+      SET status = 'error', errorCount = errorCount + 1, correctCount = 0, lastReviewedAt = ?, updatedAt = ?
       WHERE id = ?
     `);
+
+    if (errorWordIds && errorWordIds.length > 0) {
+      db.transaction((ids: string[]) => {
+        for (const id of ids) {
+          updateError.run(today, today, id);
+        }
+      })(errorWordIds);
+    }
 
     const updateCorrect = db.transaction((ids: string[]) => {
       for (const id of ids) {
         const vocab = db.prepare('SELECT * FROM vocabulary WHERE id = ?').get(id) as any;
         if (vocab) {
-          if (vocab.correctCount >= 3) {
+          const newCorrectCount = vocab.correctCount + 1;
+          if (newCorrectCount >= 3) {
             db.prepare(`
               UPDATE vocabulary
-              SET status = 'mastered', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
+              SET status = 'mastered', correctCount = ?, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(today, today, id);
+            `).run(newCorrectCount, today, today, id);
           } else if (vocab.status === 'new') {
             db.prepare(`
               UPDATE vocabulary
-              SET status = 'reviewed', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
+              SET status = 'reviewed', correctCount = ?, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(today, today, id);
+            `).run(newCorrectCount, today, today, id);
           } else {
             db.prepare(`
               UPDATE vocabulary
-              SET correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
+              SET correctCount = ?, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(today, today, id);
+            `).run(newCorrectCount, today, today, id);
           }
         }
       }
     });
 
-    if (errorWordIds && errorWordIds.length > 0) {
-      updateCorrect(errorWordIds);
+    if (correctWordIds && correctWordIds.length > 0) {
+      updateCorrect(correctWordIds);
     }
 
     const updateFields: string[] = ['lastStudyDate = ?'];
@@ -444,6 +469,7 @@ router.post('/daily-task/complete', (req, res) => {
 
     res.json({ message: '任务完成' });
   } catch (error) {
+    console.error('完成任务失败:', error);
     res.status(500).json({ error: '完成任务失败' });
   }
 });
