@@ -3,84 +3,71 @@ import html2canvas from 'html2canvas';
 import { Vocabulary } from '@/types';
 
 export const generatePDF = async (words: Vocabulary[], showAnswers: boolean) => {
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
-
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 15;
-  const lineHeight = 10;
-  const wordsPerColumn = 20;
-  const columnWidth = (pageWidth - margin * 3) / 2;
-
-  const processPage = (startIndex: number) => {
-    let yPosition = margin + 20;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('英语默写练习', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 12;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.text(new Date().toLocaleDateString('zh-CN'), pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-
-    doc.setFontSize(12);
-    const column1Words = words.slice(startIndex, startIndex + wordsPerColumn);
-    const column2Words = words.slice(startIndex + wordsPerColumn, startIndex + wordsPerColumn * 2);
-
-    column1Words.forEach((word, index) => {
+  const wordsPerColumn = Math.ceil(words.length / 2);
+  const column1Words = words.slice(0, wordsPerColumn);
+  const column2Words = words.slice(wordsPerColumn);
+  
+  const generateColumnHTML = (columnWords: Vocabulary[], startIndex: number) => {
+    return columnWords.map((word, index) => {
       const actualIndex = startIndex + index;
-      const currentY = yPosition + index * (lineHeight + 8);
-      
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${actualIndex + 1}. ${word.meaning}`, margin, currentY);
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setLineWidth(0.4);
-      doc.line(margin, currentY + 6, margin + columnWidth, currentY + 6);
-      
-      if (showAnswers) {
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(100, 100, 100);
-        doc.text(word.word, margin, currentY + 4);
-        doc.setTextColor(0, 0, 0);
-      }
-    });
-
-    const rightColumnX = margin + columnWidth + margin;
-    column2Words.forEach((word, index) => {
-      const actualIndex = startIndex + wordsPerColumn + index;
-      const currentY = yPosition + index * (lineHeight + 8);
-      
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${actualIndex + 1}. ${word.meaning}`, rightColumnX, currentY);
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setLineWidth(0.4);
-      doc.line(rightColumnX, currentY + 6, rightColumnX + columnWidth, currentY + 6);
-      
-      if (showAnswers) {
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(100, 100, 100);
-        doc.text(word.word, rightColumnX, currentY + 4);
-        doc.setTextColor(0, 0, 0);
-      }
-    });
+      return `
+        <div style="margin-bottom: 8px;">
+          <div style="font-weight: bold; font-size: 13px; margin-bottom: 2px;">
+            ${actualIndex + 1}. ${word.meaning}
+          </div>
+          <div style="height: 20px; border-bottom: 1px solid #9ca3af; ${
+            showAnswers ? 'color: #6b7280; font-style: italic; font-size: 11px;' : ''
+          }">
+            ${showAnswers ? word.word : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
   };
 
-  for (let i = 0; i < words.length; i += wordsPerColumn * 2) {
-    if (i > 0) {
-      doc.addPage();
-    }
-    processPage(i);
+  const container = document.createElement('div');
+  container.innerHTML = `
+    <div style="width: 210mm; padding: 10mm; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div style="text-align: center; margin-bottom: 15px;">
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">英语默写练习</div>
+        <div style="color: #6b7280; font-size: 11px;">${new Date().toLocaleDateString('zh-CN')}</div>
+      </div>
+      <div style="display: flex; gap: 15px;">
+        <div style="flex: 1;">${generateColumnHTML(column1Words, 0)}</div>
+        <div style="flex: 1;">${generateColumnHTML(column2Words, wordsPerColumn)}</div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(container);
+  
+  try {
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+    
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+    
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+    const imgY = (pdfHeight - imgHeight * ratio) / 2;
+    
+    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+    pdf.save('english-vocabulary-practice.pdf');
+  } finally {
+    document.body.removeChild(container);
   }
-
-  doc.save('english-vocabulary-practice.pdf');
 };
 
 export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
