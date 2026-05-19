@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { CheckCircle2, XCircle, Download, Printer, RefreshCw } from 'lucide-react';
+import { CheckCircle2, XCircle, Download, Printer, RefreshCw, History } from 'lucide-react';
 import { Vocabulary } from '@/types';
 import { generatePDF, printPaper } from '@/utils/pdf';
+import HistoryModal from '@/components/HistoryModal';
 
 const Daily: React.FC = () => {
   const {
@@ -16,6 +17,7 @@ const Daily: React.FC = () => {
   const [selectedErrors, setSelectedErrors] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -108,6 +110,13 @@ const Daily: React.FC = () => {
               </p>
             </div>
             <div className="flex gap-3">
+              <button
+                onClick={() => setShowHistory(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+              >
+                <History size={18} />
+                历史记录
+              </button>
               <button
                 onClick={handleRegenerate}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
@@ -223,6 +232,10 @@ const Daily: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {showHistory && (
+        <HistoryModal onClose={() => setShowHistory(false)} />
+      )}
     </div>
   );
 };
