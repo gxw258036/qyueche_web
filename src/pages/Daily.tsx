@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { CheckCircle2, XCircle, Download, Printer, RefreshCw, History } from 'lucide-react';
+import { CheckCircle2, XCircle, Printer, RefreshCw, History } from 'lucide-react';
 import { Vocabulary } from '@/types';
-import { generatePDF, printPaper } from '@/utils/pdf';
+import { printPaper } from '@/utils/pdf';
 import HistoryModal from '@/components/HistoryModal';
 
 const Daily: React.FC = () => {
@@ -83,12 +83,6 @@ const Daily: React.FC = () => {
     setIsComplete(true);
   };
 
-  const handleGeneratePDF = async () => {
-    if (allWords.length > 0) {
-      await generatePDF(allWords, false);
-    }
-  };
-
   const handlePrint = async () => {
     if (allWords.length > 0) {
       await printPaper(allWords, false);
@@ -161,17 +155,10 @@ const Daily: React.FC = () => {
               </button>
               <button
                 onClick={handlePrint}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700"
               >
                 <Printer size={18} />
                 打印
-              </button>
-              <button
-                onClick={handleGeneratePDF}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-              >
-                <Download size={18} />
-                下载PDF
               </button>
             </div>
           </div>

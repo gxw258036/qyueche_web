@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
-import { FileText, AlertCircle, Download, Printer, Eye } from 'lucide-react';
+import { FileText, AlertCircle, Printer, Eye } from 'lucide-react';
 import { Vocabulary } from '@/types';
-import { generatePDF, printPaper } from '@/utils/pdf';
+import { printPaper } from '@/utils/pdf';
 
 const Papers: React.FC = () => {
   const { settings, vocabulary, dailyTask, loadVocabulary } = useStore();
@@ -45,13 +45,6 @@ const Papers: React.FC = () => {
     const words = getWordsForPaper();
     setPreviewWords(words);
     setShowPreview(true);
-  };
-
-  const handleGeneratePDF = async () => {
-    const words = getWordsForPaper();
-    if (words.length > 0) {
-      await generatePDF(words, showAnswers);
-    }
   };
 
   const handlePrint = async () => {
@@ -194,17 +187,10 @@ const Papers: React.FC = () => {
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl hover:from-orange-600 hover:to-blue-700"
             >
               <Printer size={20} />
               打印
-            </button>
-            <button
-              onClick={handleGeneratePDF}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl hover:from-orange-600 hover:to-blue-700"
-            >
-              <Download size={20} />
-              下载PDF
             </button>
           </div>
         </div>
