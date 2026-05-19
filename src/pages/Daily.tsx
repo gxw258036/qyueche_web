@@ -100,7 +100,7 @@ const Daily: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center px-4">
           <RefreshCw className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
           <p className="text-xl text-gray-600">正在加载...</p>
         </div>
@@ -111,9 +111,9 @@ const Daily: React.FC = () => {
   if (!dailyTask || !dailyTask.id) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center px-4">
           <div className="text-orange-500 mb-4" style={{ fontSize: '48px' }}>📚</div>
-          <p className="text-xl text-gray-600 mb-4">
+          <p className="text-lg sm:text-xl text-gray-600 mb-4">
             {dailyTask?.message || '暂无今日任务'}
           </p>
           <button
@@ -129,104 +129,112 @@ const Daily: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        {/* Header Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6">
+          {/* Title and Actions */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">今日默写任务</h1>
-              <p className="text-gray-600">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">今日默写任务</h1>
+              <p className="text-gray-600 text-sm sm:text-base">
                 {settings.currentGrade}年级 · {new Date().toLocaleDateString('zh-CN')}
               </p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowHistory(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
-              >
-                <History size={18} />
-                历史记录
-              </button>
-              <button
-                onClick={handleRegenerate}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                <RefreshCw size={18} />
-                重新生成
-              </button>
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700"
-              >
-                <Printer size={18} />
-                打印
-              </button>
-            </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-orange-50 p-4 rounded-xl text-center">
-              <div className="text-3xl font-bold text-orange-600">{(dailyTask.newWords || []).length}</div>
-              <div className="text-sm text-orange-700">新词</div>
-            </div>
-            <div className="bg-blue-50 p-4 rounded-xl text-center">
-              <div className="text-3xl font-bold text-blue-600">{(dailyTask.reviewedWords || []).length}</div>
-              <div className="text-sm text-blue-700">旧词</div>
-            </div>
-            <div className="bg-green-50 p-4 rounded-xl text-center">
-              <div className="text-3xl font-bold text-green-600">{allWords.length - selectedErrors.length}</div>
-              <div className="text-sm text-green-700">正确</div>
-            </div>
-            <div className="bg-red-50 p-4 rounded-xl text-center">
-              <div className="text-3xl font-bold text-red-600">{selectedErrors.length}</div>
-              <div className="text-sm text-red-700">错误</div>
-            </div>
+          {/* Action Buttons - Horizontal scroll on mobile */}
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1 sm:overflow-visible sm:pb-0 sm:-mx-0 sm:px-0">
+            <button
+              onClick={() => setShowHistory(true)}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 whitespace-nowrap text-sm"
+            >
+              <History size={16} />
+              历史
+            </button>
+            <button
+              onClick={handleRegenerate}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 whitespace-nowrap text-sm"
+            >
+              <RefreshCw size={16} />
+              重新生成
+            </button>
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 whitespace-nowrap text-sm"
+            >
+              <Printer size={16} />
+              打印
+            </button>
           </div>
+        </div>
 
-          <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">词汇列表</h2>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-orange-50 p-3 sm:p-4 rounded-xl text-center">
+            <div className="text-2xl sm:text-3xl font-bold text-orange-600">{(dailyTask.newWords || []).length}</div>
+            <div className="text-xs sm:text-sm text-orange-700">新词</div>
+          </div>
+          <div className="bg-blue-50 p-3 sm:p-4 rounded-xl text-center">
+            <div className="text-2xl sm:text-3xl font-bold text-blue-600">{(dailyTask.reviewedWords || []).length}</div>
+            <div className="text-xs sm:text-sm text-blue-700">旧词</div>
+          </div>
+          <div className="bg-green-50 p-3 sm:p-4 rounded-xl text-center">
+            <div className="text-2xl sm:text-3xl font-bold text-green-600">{allWords.length - selectedErrors.length}</div>
+            <div className="text-xs sm:text-sm text-green-700">正确</div>
+          </div>
+          <div className="bg-red-50 p-3 sm:p-4 rounded-xl text-center">
+            <div className="text-2xl sm:text-3xl font-bold text-red-600">{selectedErrors.length}</div>
+            <div className="text-xs sm:text-sm text-red-700">错误</div>
+          </div>
+        </div>
+
+        {/* Word List */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">词汇列表</h2>
+          <div className="space-y-2 sm:space-y-3">
             {allWords.map((word, index) => {
               const isError = selectedErrors.includes(word.id);
               const isNew = (dailyTask.newWords || []).some((w: any) => w.id === word.id);
               return (
                 <div
                   key={word.id}
-                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                  className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border-2 transition-all ${
                     isError 
                       ? 'border-red-300 bg-red-50' 
                       : 'border-gray-200 bg-white hover:border-blue-300'
                   }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <span className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-600">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <span className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-gray-100 rounded-full text-xs sm:text-sm font-semibold text-gray-600 flex-shrink-0">
                       {index + 1}
                     </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-semibold text-gray-800">{word.meaning}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                        <span className="text-base sm:text-lg font-semibold text-gray-800 truncate">{word.meaning}</span>
                         {isNew && (
-                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">新词</span>
+                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full flex-shrink-0">新词</span>
                         )}
                       </div>
-                      <span className="text-sm text-gray-500">{word.word}</span>
+                      <span className="text-xs sm:text-sm text-gray-500 truncate block">{word.word}</span>
                     </div>
                   </div>
                   {!isComplete && (
                     <button
                       onClick={() => toggleErrorWord(word.id)}
-                      className={`p-2 rounded-lg transition-all ${
+                      className={`p-2 rounded-lg transition-all flex-shrink-0 ${
                         isError
                           ? 'bg-red-500 text-white'
                           : 'bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-500'
                       }`}
                     >
-                      {isError ? <XCircle size={20} /> : <CheckCircle2 size={20} />}
+                      {isError ? <XCircle size={18} /> : <CheckCircle2 size={18} />}
                     </button>
                   )}
                   {isComplete && (
                     isError ? (
-                      <XCircle className="text-red-500" size={24} />
+                      <XCircle className="text-red-500 flex-shrink-0" size={20} />
                     ) : (
-                      <CheckCircle2 className="text-green-500" size={24} />
+                      <CheckCircle2 className="text-green-500 flex-shrink-0" size={20} />
                     )
                   )}
                 </div>
@@ -234,22 +242,24 @@ const Daily: React.FC = () => {
             })}
           </div>
 
+          {/* Complete Button */}
           {!isComplete && (
-            <div className="mt-8">
+            <div className="mt-6 sm:mt-8">
               <button
                 onClick={handleSaveErrors}
-                className="w-full py-4 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-teal-700 transition-all text-lg"
+                className="w-full py-3 sm:py-4 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-teal-700 transition-all text-base sm:text-lg"
               >
                 保存并完成今日任务
               </button>
             </div>
           )}
 
+          {/* Success Message */}
           {isComplete && (
-            <div className="mt-8 p-6 bg-green-50 rounded-xl border-2 border-green-200 text-center">
-              <CheckCircle2 className="mx-auto mb-4 text-green-600" size={48} />
-              <h3 className="text-2xl font-bold text-green-800 mb-2">太棒了！</h3>
-              <p className="text-green-700">今日任务已完成，继续保持！</p>
+            <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-green-50 rounded-xl border-2 border-green-200 text-center">
+              <CheckCircle2 className="mx-auto mb-2 sm:mb-4 text-green-600" size={40} />
+              <h3 className="text-lg sm:text-2xl font-bold text-green-800 mb-1 sm:mb-2">太棒了！</h3>
+              <p className="text-green-700 text-sm sm:text-base">今日任务已完成，继续保持！</p>
             </div>
           )}
         </div>

@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { Calendar, Book, CheckCircle, AlertCircle } from 'lucide-react';
 import { GRADE_CONFIGS } from '@/types';
+import { useEffect, useState } from 'react';
 
-const Home: React.FC = () => {
+const Home = () => {
   const navigate = useNavigate();
   const { settings, vocabulary, updateSettings, dailyTask, statistics, loadVocabulary } = useStore();
   const [stats, setStats] = useState<any>(null);
@@ -30,107 +30,113 @@ const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            👋 欢迎使用小学英语默写工具
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Header */}
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-3 sm:mb-4">
+            👋 欢迎使用宝宝英语
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-600 text-base sm:text-lg">
             每日坚持，词汇量天天涨！
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">选择年级</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {/* Grade Selection */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">选择年级</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {[2, 3, 4, 5, 6].map((grade) => (
               <button
                 key={grade}
                 onClick={() => handleGradeChange(grade)}
-                className={`p-6 rounded-xl text-center transition-all ${
+                className={`p-4 sm:p-5 lg:p-6 rounded-xl text-center transition-all ${
                   settings.currentGrade === grade
-                    ? 'bg-gradient-to-br from-orange-500 to-blue-600 text-white shadow-lg'
+                    ? 'bg-gradient-to-br from-orange-500 to-blue-600 text-white shadow-lg scale-105'
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                 }`}
               >
-                <div className="text-2xl font-bold">{grade}年级</div>
-                <div className="text-sm opacity-90">
-                  {GRADE_CONFIGS[grade].newCount}个新词 + {GRADE_CONFIGS[grade].reviewCount}个旧词
+                <div className="text-xl sm:text-2xl font-bold">{grade}年级</div>
+                <div className="text-xs sm:text-sm opacity-90 mt-1">
+                  {GRADE_CONFIGS[grade].newCount}+{GRADE_CONFIGS[grade].reviewCount}词
                 </div>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <Calendar className="text-orange-500" />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
+          {/* Today's Task */}
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">
+              <Calendar className="text-orange-500" size={24} />
               今日任务
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">今日新词数量</span>
-                <span className="text-2xl font-bold text-orange-500">{GRADE_CONFIGS[settings.currentGrade].newCount}</span>
+                <span className="text-gray-600 text-sm sm:text-base">今日新词数量</span>
+                <span className="text-xl sm:text-2xl font-bold text-orange-500">{GRADE_CONFIGS[settings.currentGrade].newCount}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">复习旧词数量</span>
-                <span className="text-2xl font-bold text-blue-500">{GRADE_CONFIGS[settings.currentGrade].reviewCount}</span>
+                <span className="text-gray-600 text-sm sm:text-base">复习旧词数量</span>
+                <span className="text-xl sm:text-2xl font-bold text-blue-500">{GRADE_CONFIGS[settings.currentGrade].reviewCount}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">总数量</span>
-                <span className="text-2xl font-bold text-gray-800">{GRADE_CONFIGS[settings.currentGrade].total}</span>
+                <span className="text-gray-600 text-sm sm:text-base">总数量</span>
+                <span className="text-xl sm:text-2xl font-bold text-gray-800">{GRADE_CONFIGS[settings.currentGrade].total}</span>
               </div>
               <button
                 onClick={handleGenerateToday}
-                className="w-full py-4 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-blue-700 transition-all"
+                className="w-full py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-blue-700 transition-all text-sm sm:text-base"
               >
                 {dailyTask ? '查看今日任务' : '开始今日默写'}
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <Book className="text-blue-500" />
+          {/* Vocabulary Stats */}
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">
+              <Book className="text-blue-500" size={24} />
               词汇统计
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">总词汇量</span>
-                <span className="text-xl font-semibold text-gray-800">{stats?.total || 0}</span>
+                <span className="text-gray-600 text-sm sm:text-base">总词汇量</span>
+                <span className="text-lg sm:text-xl font-semibold text-gray-800">{stats?.total || 0}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">未学习</span>
-                <span className="text-xl font-semibold text-orange-500">{stats?.new || 0}</span>
+                <span className="text-gray-600 text-sm sm:text-base">未学习</span>
+                <span className="text-lg sm:text-xl font-semibold text-orange-500">{stats?.new || 0}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">已掌握</span>
-                <span className="text-xl font-semibold text-green-500">{stats?.mastered || 0}</span>
+                <span className="text-gray-600 text-sm sm:text-base">已掌握</span>
+                <span className="text-lg sm:text-xl font-semibold text-green-500">{stats?.mastered || 0}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">需复习</span>
-                <span className="text-xl font-semibold text-red-500">{stats?.error || 0}</span>
+                <span className="text-gray-600 text-sm sm:text-base">需复习</span>
+                <span className="text-lg sm:text-xl font-semibold text-red-500">{stats?.error || 0}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6">
-            <CheckCircle className="text-green-600 mb-4" size={32} />
-            <h3 className="text-xl font-bold text-green-800 mb-2">科学记忆</h3>
-            <p className="text-green-700">基于艾宾浩斯遗忘曲线，智能安排复习</p>
+        {/* Feature Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-4 sm:p-6">
+            <CheckCircle className="text-green-600 mb-3 sm:mb-4" size={28} />
+            <h3 className="text-lg sm:text-xl font-bold text-green-800 mb-2">科学记忆</h3>
+            <p className="text-green-700 text-sm sm:text-base">基于艾宾浩斯遗忘曲线，智能安排复习</p>
           </div>
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6">
-            <Book className="text-blue-600 mb-4" size={32} />
-            <h3 className="text-xl font-bold text-blue-800 mb-2">个性化定制</h3>
-            <p className="text-blue-700">支持自定义词汇，满足不同需求</p>
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 sm:p-6">
+            <Book className="text-blue-600 mb-3 sm:mb-4" size={28} />
+            <h3 className="text-lg sm:text-xl font-bold text-blue-800 mb-2">个性化定制</h3>
+            <p className="text-blue-700 text-sm sm:text-base">支持自定义词汇，满足不同需求</p>
           </div>
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6">
-            <AlertCircle className="text-orange-600 mb-4" size={32} />
-            <h3 className="text-xl font-bold text-orange-800 mb-2">错题复习</h3>
-            <p className="text-orange-700">错题智能循环，重点突破难点</p>
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
+            <AlertCircle className="text-orange-600 mb-3 sm:mb-4" size={28} />
+            <h3 className="text-lg sm:text-xl font-bold text-orange-800 mb-2">错题复习</h3>
+            <p className="text-orange-700 text-sm sm:text-base">错题智能循环，重点突破难点</p>
           </div>
         </div>
       </div>

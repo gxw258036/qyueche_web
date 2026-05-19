@@ -66,7 +66,7 @@ const Students: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center px-4">
           <div className="animate-spin mx-auto mb-4 text-orange-500">加载中...</div>
         </div>
       </div>
@@ -75,27 +75,86 @@ const Students: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-white rounded-xl shadow">
-              <Users className="text-orange-500" size={28} />
+            <div className="p-2 sm:p-3 bg-white rounded-xl shadow">
+              <Users className="text-orange-500" size={24} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">学生管理</h1>
-              <p className="text-gray-600">管理学生信息和年级设置</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">学生管理</h1>
+              <p className="text-gray-600 text-sm">管理学生信息和年级设置</p>
             </div>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl hover:from-orange-600 hover:to-blue-700 transition-all shadow-lg"
+            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl hover:from-orange-600 hover:to-blue-700 transition-all shadow-lg text-sm sm:text-base"
           >
-            <Plus size={20} />
+            <Plus size={18} />
             添加学生
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        {/* Student List - Mobile Cards */}
+        <div className="sm:hidden space-y-3 mb-6">
+          {students.map((student) => (
+            <div key={student.id} className="bg-white rounded-xl shadow p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                  {student.name.charAt(0)}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-gray-800">{student.name}</div>
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                    student.grade === 2 || student.grade === 3 || student.grade === 4
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {student.grade}年级
+                  </span>
+                </div>
+                {currentStudent?.id === student.id && (
+                  <span className="flex items-center gap-1 text-green-600 text-xs">
+                    <span className="w-2 h-2 bg-green-500 rounded-full" />
+                    当前
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {currentStudent?.id !== student.id && (
+                  <button
+                    onClick={() => handleSetCurrent(student)}
+                    className="flex-1 py-2 text-green-600 bg-green-50 rounded-lg text-sm font-medium"
+                  >
+                    设为当前
+                  </button>
+                )}
+                <button
+                  onClick={() => handleEdit(student)}
+                  className="p-2 text-blue-500 bg-blue-50 rounded-lg"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button
+                  onClick={() => handleDelete(student.id)}
+                  className="p-2 text-red-500 bg-red-50 rounded-lg"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {students.length === 0 && (
+            <div className="text-center py-12 bg-white rounded-xl shadow">
+              <Users className="mx-auto text-gray-300 mb-4" size={48} />
+              <p className="text-gray-500">暂无学生信息，请添加学生</p>
+            </div>
+          )}
+        </div>
+
+        {/* Student List - Desktop Table */}
+        <div className="hidden sm:block bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -177,9 +236,10 @@ const Students: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">年级配置说明</h2>
-          <div className="grid md:grid-cols-2 gap-6">
+        {/* Grade Config Info */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">年级配置说明</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 bg-blue-50 rounded-xl">
               <h3 className="font-medium text-blue-800 mb-2">低年级 (2-4年级)</h3>
               <p className="text-blue-600 text-sm">每日默写字数: 30个词汇</p>
@@ -194,9 +254,10 @@ const Students: React.FC = () => {
         </div>
       </div>
 
+      {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">添加学生</h2>
               <button
@@ -216,7 +277,7 @@ const Students: React.FC = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="请输入学生姓名"
                 />
               </div>
@@ -228,7 +289,7 @@ const Students: React.FC = () => {
                 <select
                   value={formData.grade}
                   onChange={(e) => setFormData({ ...formData, grade: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                 >
                   <option value="2">二年级</option>
                   <option value="3">三年级</option>
@@ -241,13 +302,13 @@ const Students: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 sm:py-3 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-100 text-sm"
                 >
                   取消
                 </button>
                 <button
                   onClick={handleAdd}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700"
+                  className="flex-1 px-4 py-2 sm:py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 text-sm"
                 >
                   添加
                 </button>
@@ -257,9 +318,10 @@ const Students: React.FC = () => {
         </div>
       )}
 
+      {/* Edit Modal */}
       {showEditModal && editingStudent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">编辑学生</h2>
               <button
@@ -282,7 +344,7 @@ const Students: React.FC = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="请输入学生姓名"
                 />
               </div>
@@ -294,7 +356,7 @@ const Students: React.FC = () => {
                 <select
                   value={formData.grade}
                   onChange={(e) => setFormData({ ...formData, grade: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                 >
                   <option value="2">二年级</option>
                   <option value="3">三年级</option>
@@ -310,15 +372,15 @@ const Students: React.FC = () => {
                     setShowEditModal(false);
                     setEditingStudent(null);
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 sm:py-3 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-100 text-sm"
                 >
                   取消
                 </button>
                 <button
                   onClick={handleUpdate}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 sm:py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 flex items-center justify-center gap-2 text-sm"
                 >
-                  <Save size={18} />
+                  <Save size={16} />
                   保存
                 </button>
               </div>

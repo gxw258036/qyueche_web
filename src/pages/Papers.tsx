@@ -5,14 +5,14 @@ import { Vocabulary } from '@/types';
 import { printPaper } from '@/utils/pdf';
 
 const Papers: React.FC = () => {
-  const { settings, vocabulary, dailyTask, loadVocabulary } = useStore();
-
-  const [paperType, setPaperType] = useState<'daily' | 'error' | 'custom'>('daily');
-  const [showAnswers, setShowAnswers] = useState(false);
-  const [previewWords, setPreviewWords] = useState<Vocabulary[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
-  const [customWordCount, setCustomWordCount] = useState(20);
+  const { settings, loadVocabulary, vocabulary } = useStore();
   const [loading, setLoading] = useState(true);
+  const [paperConfig, setPaperConfig] = useState({
+    grade: settings.currentGrade,
+    newWordsCount: 5,
+    reviewedWordsCount: 25,
+  });
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -22,66 +22,38 @@ const Papers: React.FC = () => {
     init();
   }, []);
 
-  const gradeVocabulary = vocabulary;
-  const errorVocabulary = gradeVocabulary.filter(v => v.status === 'error');
-
-  const getWordsForPaper = (): Vocabulary[] => {
-    switch (paperType) {
-      case 'daily':
-        return dailyTask 
-          ? [...(dailyTask.newWords || []), ...(dailyTask.reviewedWords || [])]
-          : [];
-      case 'error':
-        return errorVocabulary;
-      case 'custom':
-        const shuffled = [...gradeVocabulary].sort(() => Math.random() - 0.5);
-        return shuffled.slice(0, customWordCount);
-      default:
-        return [];
-    }
+  const getFilteredVocabulary = () => {
+    return vocabulary.filter(v => v.grade === paperConfig.grade);
   };
 
-  const handlePreview = () => {
-    const words = getWordsForPaper();
-    setPreviewWords(words);
-    setShowPreview(true);
+  const getWordsForPaper = (): Vocabulary[] => {
+    const filtered = getFilteredVocabulary();
+    const newWords = filtered.filter(v => v.status === 'new').slice(0, paperConfig.newWordsCount);
+    const reviewedWords = filtered.filter(v => v.status !== 'new').slice(0, paperConfig.reviewedWordsCount);
+    const shuffled = [...newWords, ...reviewedWords].sort(() => Math.random() - 0.5);
+    return shuffled;
   };
 
   const handlePrint = async () => {
     const words = getWordsForPaper();
     if (words.length > 0) {
-      await printPaper(words, showAnswers);
+      await printPaper(words, false);
+    } else {
+      alert('没有可打印的词汇');
     }
   };
 
-  const getPaperTitle = () => {
-    const titles = {
-      daily: '今日默写任务',
-      error: '错题专项练习',
-      custom: '自定义默写练习',
-    };
-    return titles[paperType];
-  };
-
-  const getPaperDescription = () => {
-    switch (paperType) {
-      case 'daily':
-        return dailyTask 
-          ? `共 ${(dailyTask.newWords?.length || 0) + (dailyTask.reviewedWords?.length || 0)} 个词汇，含 ${dailyTask.newWords?.length || 0} 个新词`
-          : '请先生成今日任务';
-      case 'error':
-        return `共 ${errorVocabulary.length} 个错题需要复习`;
-      case 'custom':
-        return `从 ${gradeVocabulary.length} 个词汇中随机选择 ${customWordCount} 个`;
-      default:
-        return '';
-    }
+  const filteredVocabulary = getFilteredVocabulary();
+  const stats = {
+    total: filteredVocabulary.length,
+    new: filteredVocabulary.filter(v => v.status === 'new').length,
+    reviewed: filteredVocabulary.filter(v => v.status !== 'new').length,
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center px-4">
           <div className="animate-spin mx-auto mb-4 text-orange-500">加载中...</div>
         </div>
       </div>
@@ -90,154 +62,124 @@ const Papers: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">试卷中心</h1>
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-2">试卷生成</h1>
+          <p className="text-gray-600 text-sm sm:text-base">生成个性化默写试卷</p>
+        </div>
 
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">选择试卷类型</h2>
-            <div className="grid md:grid-cols-3 gap-4">
-              <button
-                onClick={() => setPaperType('daily')}
-                className={`p-6 rounded-xl border-2 transition-all text-left ${
-                  paperType === 'daily'
-                    ? 'border-orange-500 bg-orange-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <FileText className="text-orange-500 mb-3" size={32} />
-                <h3 className="text-lg font-semibold text-gray-800 mb-1">今日任务</h3>
-                <p className="text-sm text-gray-600">使用今日生成的默写任务</p>
-              </button>
-
-              <button
-                onClick={() => setPaperType('error')}
-                className={`p-6 rounded-xl border-2 transition-all text-left ${
-                  paperType === 'error'
-                    ? 'border-red-500 bg-red-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <AlertCircle className="text-red-500 mb-3" size={32} />
-                <h3 className="text-lg font-semibold text-gray-800 mb-1">错题专项</h3>
-                <p className="text-sm text-gray-600">只包含标记为错误的词汇</p>
-              </button>
-
-              <button
-                onClick={() => setPaperType('custom')}
-                className={`p-6 rounded-xl border-2 transition-all text-left ${
-                  paperType === 'custom'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <FileText className="text-blue-500 mb-3" size={32} />
-                <h3 className="text-lg font-semibold text-gray-800 mb-1">自定义</h3>
-                <p className="text-sm text-gray-600">随机选择指定数量的词汇</p>
-              </button>
-            </div>
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+          <div className="bg-white rounded-xl p-3 sm:p-4 text-center shadow">
+            <div className="text-2xl sm:text-3xl font-bold text-gray-800">{stats.total}</div>
+            <div className="text-xs sm:text-sm text-gray-600">总词汇</div>
           </div>
-
-          {paperType === 'custom' && (
-            <div className="mb-8 p-6 bg-gray-50 rounded-xl">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                词汇数量: {customWordCount}
-              </label>
-              <input
-                type="range"
-                min="5"
-                max={Math.min(100, gradeVocabulary.length)}
-                value={customWordCount}
-                onChange={(e) => setCustomWordCount(parseInt(e.target.value))}
-                className="w-full"
-              />
-            </div>
-          )}
-
-          <div className="mb-8 p-6 bg-gray-50 rounded-xl">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">包含答案</label>
-              <button
-                onClick={() => setShowAnswers(!showAnswers)}
-                className={`w-14 h-7 rounded-full transition-colors ${
-                  showAnswers ? 'bg-green-500' : 'bg-gray-300'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                    showAnswers ? 'translate-x-7' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
+          <div className="bg-orange-50 rounded-xl p-3 sm:p-4 text-center shadow">
+            <div className="text-2xl sm:text-3xl font-bold text-orange-600">{stats.new}</div>
+            <div className="text-xs sm:text-sm text-orange-700">新词</div>
           </div>
-
-          <div className="mb-8 p-6 bg-blue-50 rounded-xl">
-            <h3 className="text-lg font-semibold text-blue-800 mb-2">{getPaperTitle()}</h3>
-            <p className="text-blue-600">{getPaperDescription()}</p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handlePreview}
-              className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200"
-            >
-              <Eye size={20} />
-              预览
-            </button>
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl hover:from-orange-600 hover:to-blue-700"
-            >
-              <Printer size={20} />
-              打印
-            </button>
+          <div className="bg-blue-50 rounded-xl p-3 sm:p-4 text-center shadow">
+            <div className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.reviewed}</div>
+            <div className="text-xs sm:text-sm text-blue-700">旧词</div>
           </div>
         </div>
 
-        {showPreview && (
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">试卷预览</h2>
-              <button
-                onClick={() => setShowPreview(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+        {/* Configuration */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">试卷配置</h2>
+          
+          <div className="space-y-4 sm:space-y-6">
+            {/* Grade Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">选择年级</label>
+              <select
+                value={paperConfig.grade}
+                onChange={(e) => setPaperConfig({ ...paperConfig, grade: parseInt(e.target.value) })}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
               >
-                关闭
-              </button>
+                {[2, 3, 4, 5, 6].map((grade) => (
+                  <option key={grade} value={grade}>
+                    {grade}年级
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div id="paper-preview" className="border-2 border-gray-200 rounded-xl p-8">
-              <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">{getPaperTitle()}</h1>
-                <p className="text-gray-600">
-                  {settings.currentGrade}年级 · {new Date().toLocaleDateString('zh-CN')}
-                </p>
+            {/* New Words Count */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                新词数量: {paperConfig.newWordsCount}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="30"
+                value={paperConfig.newWordsCount}
+                onChange={(e) => setPaperConfig({ ...paperConfig, newWordsCount: parseInt(e.target.value) })}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0</span>
+                <span>30</span>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                {previewWords.map((word, index) => (
-                  <div key={word.id} className="flex items-center gap-4 border-b border-gray-100 pb-4">
-                    <span className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-600">
-                      {index + 1}
-                    </span>
-                    <div className="flex-1">
-                      <div className="text-lg font-medium text-gray-800 mb-1">{word.meaning}</div>
-                      <div
-                        className="h-8 border-b-2 border-gray-300"
-                        style={{
-                          color: showAnswers ? '#1f2937' : 'transparent',
-                        }}
-                      >
-                        {showAnswers && word.word}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            {/* Reviewed Words Count */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                旧词数量: {paperConfig.reviewedWordsCount}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="30"
+                value={paperConfig.reviewedWordsCount}
+                onChange={(e) => setPaperConfig({ ...paperConfig, reviewedWordsCount: parseInt(e.target.value) })}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0</span>
+                <span>30</span>
               </div>
+            </div>
+
+            {/* Preview */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">预览信息</h3>
+              <p className="text-sm text-gray-600">
+                共 <span className="font-bold text-orange-600">{paperConfig.newWordsCount + paperConfig.reviewedWordsCount}</span> 个词汇
+              </p>
+              {paperConfig.newWordsCount + paperConfig.reviewedWordsCount === 0 && (
+                <div className="flex items-start gap-2 mt-3 text-orange-600 text-sm">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>请至少选择一个新词或旧词数量</span>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={handlePrint}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl hover:from-orange-600 hover:to-blue-700 transition-all font-semibold text-sm sm:text-base"
+          >
+            <Printer size={20} />
+            打印
+          </button>
+        </div>
+
+        {/* Tips */}
+        <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">💡 打印提示</h3>
+          <ul className="text-sm text-gray-600 space-y-1 sm:space-y-2">
+            <li>• 生成的试卷为A4格式，适合直接打印</li>
+            <li>• 试卷包含中文释义，方便学生默写英文</li>
+            <li>• 打印后建议预览效果后再批量打印</li>
+          </ul>
+        </div>
       </div>
     </div>
   );
