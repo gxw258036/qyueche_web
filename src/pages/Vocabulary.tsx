@@ -190,28 +190,28 @@ const Vocabulary: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 mb-4 sm:mb-5">
           {/* Header */}
-          <div className="flex flex-col gap-4 mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 mb-4 sm:mb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-1">词汇管理</h1>
-                <p className="text-gray-600 text-sm">共 {filteredVocabulary.length} 个词汇</p>
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-1">词汇管理</h1>
+                <p className="text-gray-600 text-xs sm:text-sm">共 {filteredVocabulary.length} 个词汇</p>
               </div>
             </div>
             
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-2 sm:gap-3">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setShowBulkModal(true)}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
+                className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
               >
                 批量导入
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 disabled={selectedIds.size === 0}
               >
                 <Trash2 size={16} />
@@ -222,7 +222,7 @@ const Vocabulary: React.FC = () => {
                   resetForm();
                   setShowAddModal(true);
                 }}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 text-sm"
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 text-sm"
               >
                 <Plus size={16} />
                 添加
@@ -231,11 +231,11 @@ const Vocabulary: React.FC = () => {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-2.5 mb-3 sm:mb-4">
             <select
               value={gradeFilter}
               onChange={(e) => setGradeFilter(parseInt(e.target.value))}
-              className="px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+              className="px-3 py-2 sm:py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
             >
               {[2, 3, 4, 5, 6].map((grade) => (
                 <option key={grade} value={grade}>{grade}年级</option>

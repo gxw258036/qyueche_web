@@ -75,37 +75,37 @@ const Students: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
-      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-          <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-3 bg-white rounded-xl shadow">
-              <Users className="text-orange-500" size={24} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-white rounded-xl shadow">
+              <Users className="text-orange-500" size={20} />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">学生管理</h1>
-              <p className="text-gray-600 text-sm">管理学生信息和年级设置</p>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">学生管理</h1>
+              <p className="text-gray-600 text-xs sm:text-sm">管理学生信息和年级设置</p>
             </div>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-xl hover:from-orange-600 hover:to-blue-700 transition-all shadow-lg text-sm sm:text-base"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 transition-all shadow text-sm"
           >
-            <Plus size={18} />
+            <Plus size={16} />
             添加学生
           </button>
         </div>
 
         {/* Student List - Mobile Cards */}
-        <div className="sm:hidden space-y-3 mb-6">
+        <div className="sm:hidden space-y-2.5 mb-4 sm:mb-5">
           {students.map((student) => (
-            <div key={student.id} className="bg-white rounded-xl shadow p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+            <div key={student.id} className="bg-white rounded-xl shadow p-3">
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <div className="w-9 h-9 bg-gradient-to-r from-orange-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
                   {student.name.charAt(0)}
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium text-gray-800">{student.name}</div>
+                  <div className="font-medium text-gray-800 text-sm">{student.name}</div>
                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
                     student.grade === 2 || student.grade === 3 || student.grade === 4
                       ? 'bg-blue-100 text-blue-700'
@@ -125,59 +125,59 @@ const Students: React.FC = () => {
                 {currentStudent?.id !== student.id && (
                   <button
                     onClick={() => handleSetCurrent(student)}
-                    className="flex-1 py-2 text-green-600 bg-green-50 rounded-lg text-sm font-medium"
+                    className="flex-1 py-1.5 text-green-600 bg-green-50 rounded-lg text-xs font-medium"
                   >
                     设为当前
                   </button>
                 )}
                 <button
                   onClick={() => handleEdit(student)}
-                  className="p-2 text-blue-500 bg-blue-50 rounded-lg"
+                  className="p-1.5 text-blue-500 bg-blue-50 rounded-lg"
                 >
-                  <Edit2 size={16} />
+                  <Edit2 size={14} />
                 </button>
                 <button
                   onClick={() => handleDelete(student.id)}
-                  className="p-2 text-red-500 bg-red-50 rounded-lg"
+                  className="p-1.5 text-red-500 bg-red-50 rounded-lg"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
           ))}
           {students.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-xl shadow">
-              <Users className="mx-auto text-gray-300 mb-4" size={48} />
-              <p className="text-gray-500">暂无学生信息，请添加学生</p>
+            <div className="text-center py-10 bg-white rounded-xl shadow">
+              <Users className="mx-auto text-gray-300 mb-3" size={40} />
+              <p className="text-gray-500 text-sm">暂无学生信息，请添加学生</p>
             </div>
           )}
         </div>
 
         {/* Student List - Desktop Table */}
-        <div className="hidden sm:block bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+        <div className="hidden sm:block bg-white rounded-xl shadow-lg p-3 sm:p-4 mb-4 sm:mb-5">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-gray-600 font-medium">姓名</th>
-                  <th className="text-left py-3 px-4 text-gray-600 font-medium">年级</th>
-                  <th className="text-left py-3 px-4 text-gray-600 font-medium">当前状态</th>
-                  <th className="text-right py-3 px-4 text-gray-600 font-medium">操作</th>
+                  <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">姓名</th>
+                  <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">年级</th>
+                  <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">当前状态</th>
+                  <th className="text-right py-2.5 px-3 text-gray-600 font-medium text-sm">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {students.map((student) => (
                   <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                    <td className="py-3 px-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 bg-gradient-to-r from-orange-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                           {student.name.charAt(0)}
                         </div>
-                        <span className="font-medium text-gray-800">{student.name}</span>
+                        <span className="font-medium text-gray-800 text-sm">{student.name}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    <td className="py-3 px-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         student.grade === 2 || student.grade === 3 || student.grade === 4
                           ? 'bg-blue-100 text-blue-700'
                           : 'bg-purple-100 text-purple-700'
@@ -185,40 +185,40 @@ const Students: React.FC = () => {
                         {student.grade}年级
                       </span>
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="py-3 px-3">
                       {currentStudent?.id === student.id ? (
-                        <span className="flex items-center gap-1 text-green-600">
+                        <span className="flex items-center gap-1 text-green-600 text-sm">
                           <span className="w-2 h-2 bg-green-500 rounded-full" />
                           当前使用
                         </span>
                       ) : (
-                        <span className="text-gray-400">未选中</span>
+                        <span className="text-gray-400 text-sm">未选中</span>
                       )}
                     </td>
-                    <td className="py-4 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="py-3 px-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
                         {currentStudent?.id !== student.id && (
                           <button
                             onClick={() => handleSetCurrent(student)}
-                            className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                            className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
                             title="设为当前学生"
                           >
-                            <Check size={18} />
+                            <Check size={16} />
                           </button>
                         )}
                         <button
                           onClick={() => handleEdit(student)}
-                          className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
                           title="编辑学生"
                         >
-                          <Edit2 size={18} />
+                          <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(student.id)}
-                          className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="删除学生"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
@@ -228,27 +228,27 @@ const Students: React.FC = () => {
             </table>
 
             {students.length === 0 && (
-              <div className="text-center py-12">
-                <Users className="mx-auto text-gray-300 mb-4" size={48} />
-                <p className="text-gray-500">暂无学生信息，请添加学生</p>
+              <div className="text-center py-10">
+                <Users className="mx-auto text-gray-300 mb-3" size={40} />
+                <p className="text-gray-500 text-sm">暂无学生信息，请添加学生</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Grade Config Info */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">年级配置说明</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-xl">
-              <h3 className="font-medium text-blue-800 mb-2">低年级 (2-4年级)</h3>
-              <p className="text-blue-600 text-sm">每日默写字数: 30个词汇</p>
-              <p className="text-blue-600 text-sm mt-1">包含基础词汇和常用短语</p>
+        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">年级配置说明</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <h3 className="font-medium text-blue-800 mb-1.5 text-sm">低年级 (2-4年级)</h3>
+              <p className="text-blue-600 text-xs sm:text-sm">每日默写字数: 30个词汇</p>
+              <p className="text-blue-600 text-xs sm:text-sm mt-0.5">包含基础词汇和常用短语</p>
             </div>
-            <div className="p-4 bg-purple-50 rounded-xl">
-              <h3 className="font-medium text-purple-800 mb-2">高年级 (5-6年级)</h3>
-              <p className="text-purple-600 text-sm">每日默写字数: 40个词汇</p>
-              <p className="text-purple-600 text-sm mt-1">包含进阶词汇和复杂短语</p>
+            <div className="p-3 bg-purple-50 rounded-lg">
+              <h3 className="font-medium text-purple-800 mb-1.5 text-sm">高年级 (5-6年级)</h3>
+              <p className="text-purple-600 text-xs sm:text-sm">每日默写字数: 40个词汇</p>
+              <p className="text-purple-600 text-xs sm:text-sm mt-0.5">包含进阶词汇和复杂短语</p>
             </div>
           </div>
         </div>

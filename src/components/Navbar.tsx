@@ -56,12 +56,20 @@ const Navbar: React.FC = () => {
       <nav className="bg-white shadow-lg sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-3 sm:px-4">
           <div className="flex items-center justify-between h-14 sm:h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
+            {/* Logo & Current Student */}
+            <div className="flex items-center gap-2 sm:gap-3">
               <BookOpen className="text-orange-500" size={24} />
-              <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent truncate">
-                宝宝英语
-              </span>
+              <div className="flex flex-col">
+                <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent">
+                  宝宝英语
+                </span>
+                {currentStudent && (
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    {currentStudent.name} · {currentStudent.grade}年级
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Desktop Student Selector */}
@@ -172,21 +180,47 @@ const Navbar: React.FC = () => {
 
               {showStudentMenu && (
                 <div className="mt-2 bg-gray-50 rounded-lg overflow-hidden">
-                  {students.map((student) => (
-                    <button
-                      key={student.id}
-                      onClick={() => {
-                        handleSelectStudent(student);
-                        setShowMobileMenu(false);
-                      }}
-                      className={`w-full px-4 py-3 text-left flex items-center justify-between border-b border-gray-100 last:border-0 ${
-                        currentStudent?.id === student.id ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <span className="font-medium text-gray-700">{student.name}</span>
-                      <span className="text-sm text-gray-500">{student.grade}年级</span>
-                    </button>
-                  ))}
+                  {students.map((student) => {
+                    const isActive = currentStudent?.id === student.id;
+                    return (
+                      <button
+                        key={student.id}
+                        onClick={() => {
+                          handleSelectStudent(student);
+                          setShowMobileMenu(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left flex items-center justify-between border-b border-gray-100 last:border-0 ${
+                          isActive
+                            ? 'bg-gradient-to-r from-orange-50 to-blue-50 border-l-4 border-l-orange-500'
+                            : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {isActive ? (
+                            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-blue-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">{student.name.charAt(0)}</span>
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                              <span className="text-gray-500 text-xs font-bold">{student.name.charAt(0)}</span>
+                            </div>
+                          )}
+                          <div className="flex flex-col items-start">
+                            <span className={`font-medium ${isActive ? 'text-gray-800' : 'text-gray-700'}`}>
+                              {student.name}
+                            </span>
+                            <span className="text-xs text-gray-500">{student.grade}年级</span>
+                          </div>
+                        </div>
+                        {isActive && (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            <span className="text-xs">当前</span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                   <button
                     onClick={() => {
                       setShowStudentMenu(false);

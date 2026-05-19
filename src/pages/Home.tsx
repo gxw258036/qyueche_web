@@ -30,33 +30,33 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-3 sm:mb-4">
+        <div className="text-center mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-2 sm:mb-3">
             👋 欢迎使用宝宝英语
           </h1>
-          <p className="text-gray-600 text-base sm:text-lg">
+          <p className="text-gray-600 text-sm sm:text-base">
             每日坚持，词汇量天天涨！
           </p>
         </div>
 
         {/* Grade Selection */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">选择年级</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
+          <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-800 mb-3 sm:mb-4">选择年级</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
             {[2, 3, 4, 5, 6].map((grade) => (
               <button
                 key={grade}
                 onClick={() => handleGradeChange(grade)}
-                className={`p-4 sm:p-5 lg:p-6 rounded-xl text-center transition-all ${
+                className={`p-3 sm:p-4 lg:p-5 rounded-lg text-center transition-all ${
                   settings.currentGrade === grade
-                    ? 'bg-gradient-to-br from-orange-500 to-blue-600 text-white shadow-lg scale-105'
+                    ? 'bg-gradient-to-br from-orange-500 to-blue-600 text-white shadow-md scale-105'
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                 }`}
               >
-                <div className="text-xl sm:text-2xl font-bold">{grade}年级</div>
-                <div className="text-xs sm:text-sm opacity-90 mt-1">
+                <div className="text-lg sm:text-xl font-bold">{grade}年级</div>
+                <div className="text-xs opacity-90 mt-1">
                   {GRADE_CONFIGS[grade].newCount}+{GRADE_CONFIGS[grade].reviewCount}词
                 </div>
               </button>
@@ -65,7 +65,7 @@ const Home = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
           {/* Today's Task */}
           <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">

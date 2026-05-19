@@ -129,38 +129,38 @@ const Daily: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
-      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Header Card */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6">
+        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 mb-4 sm:mb-5">
           {/* Title and Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 sm:mb-4">
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">今日默写任务</h1>
-              <p className="text-gray-600 text-sm sm:text-base">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-1">今日默写任务</h1>
+              <p className="text-gray-600 text-xs sm:text-sm">
                 {settings.currentGrade}年级 · {new Date().toLocaleDateString('zh-CN')}
               </p>
             </div>
           </div>
 
           {/* Action Buttons - Horizontal scroll on mobile */}
-          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1 sm:overflow-visible sm:pb-0 sm:-mx-0 sm:px-0">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 sm:overflow-visible sm:pb-0 sm:-mx-0 sm:px-0">
             <button
               onClick={() => setShowHistory(true)}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 whitespace-nowrap text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 whitespace-nowrap text-sm"
             >
               <History size={16} />
               历史
             </button>
             <button
               onClick={handleRegenerate}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 whitespace-nowrap text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 whitespace-nowrap text-sm"
             >
               <RefreshCw size={16} />
               重新生成
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 whitespace-nowrap text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 whitespace-nowrap text-sm"
             >
               <Printer size={16} />
               打印
@@ -169,29 +169,29 @@ const Daily: React.FC = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
-          <div className="bg-orange-50 p-3 sm:p-4 rounded-xl text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-orange-600">{(dailyTask.newWords || []).length}</div>
-            <div className="text-xs sm:text-sm text-orange-700">新词</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 sm:mb-5">
+          <div className="bg-orange-50 p-2.5 sm:p-3 rounded-lg text-center">
+            <div className="text-xl sm:text-2xl font-bold text-orange-600">{(dailyTask.newWords || []).length}</div>
+            <div className="text-xs text-orange-700">新词</div>
           </div>
-          <div className="bg-blue-50 p-3 sm:p-4 rounded-xl text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-blue-600">{(dailyTask.reviewedWords || []).length}</div>
-            <div className="text-xs sm:text-sm text-blue-700">旧词</div>
+          <div className="bg-blue-50 p-2.5 sm:p-3 rounded-lg text-center">
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">{(dailyTask.reviewedWords || []).length}</div>
+            <div className="text-xs text-blue-700">旧词</div>
           </div>
-          <div className="bg-green-50 p-3 sm:p-4 rounded-xl text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-green-600">{allWords.length - selectedErrors.length}</div>
-            <div className="text-xs sm:text-sm text-green-700">正确</div>
+          <div className="bg-green-50 p-2.5 sm:p-3 rounded-lg text-center">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">{allWords.length - selectedErrors.length}</div>
+            <div className="text-xs text-green-700">正确</div>
           </div>
-          <div className="bg-red-50 p-3 sm:p-4 rounded-xl text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-red-600">{selectedErrors.length}</div>
-            <div className="text-xs sm:text-sm text-red-700">错误</div>
+          <div className="bg-red-50 p-2.5 sm:p-3 rounded-lg text-center">
+            <div className="text-xl sm:text-2xl font-bold text-red-600">{selectedErrors.length}</div>
+            <div className="text-xs text-red-700">错误</div>
           </div>
         </div>
 
         {/* Word List */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">词汇列表</h2>
-          <div className="space-y-2 sm:space-y-3">
+        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 lg:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">词汇列表</h2>
+          <div className="space-y-1.5 sm:space-y-2.5">
             {allWords.map((word, index) => {
               const isError = selectedErrors.includes(word.id);
               const isNew = (dailyTask.newWords || []).some((w: any) => w.id === word.id);
