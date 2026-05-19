@@ -42,7 +42,7 @@ export const api = {
       if (params?.studentId) query.set('studentId', params.studentId);
       return fetch(`${API_BASE}/vocabulary?${query}`).then(res => res.json()) as Promise<Vocabulary[]>;
     },
-    create: (data: { word: string; meaning: string; grade: number; studentId?: string }) =>
+    create: (data: { word: string; meaning: string; grade: number; type?: string; studentId?: string }) =>
       fetch(`${API_BASE}/vocabulary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,7 +62,7 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids })
       }).then(res => res.json()),
-    bulk: (words: { word: string; meaning: string; grade: number }[], studentId?: string) =>
+    bulk: (words: { word: string; meaning: string; grade: number; type?: string }[], studentId?: string) =>
       fetch(`${API_BASE}/vocabulary/bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

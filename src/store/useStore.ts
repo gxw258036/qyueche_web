@@ -20,7 +20,7 @@ interface Store {
   setCurrentStudent: (student: Student | null) => void;
 
   loadVocabulary: (grade?: number, studentId?: string) => Promise<void>;
-  addVocabulary: (word: string, meaning: string, grade: number, studentId?: string) => Promise<void>;
+  addVocabulary: (word: string, meaning: string, grade: number, type?: string, studentId?: string) => Promise<void>;
   updateVocabulary: (id: string, word: string, meaning: string, grade: number, status: string) => Promise<void>;
   deleteVocabulary: (id: string) => Promise<void>;
   bulkDeleteVocabulary: (ids: string[]) => Promise<void>;
@@ -116,10 +116,10 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
-  addVocabulary: async (word, meaning, grade, studentId) => {
+  addVocabulary: async (word, meaning, grade, type = 'word', studentId) => {
     try {
       const effectiveStudentId = studentId ?? get().currentStudent?.id;
-      await api.vocabulary.create({ word, meaning, grade, studentId: effectiveStudentId });
+      await api.vocabulary.create({ word, meaning, grade, type, studentId: effectiveStudentId });
       await get().loadVocabulary();
     } catch (error) {
       set({ error: '添加词汇失败' });

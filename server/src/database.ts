@@ -23,6 +23,7 @@ db.exec(`
     meaning TEXT NOT NULL,
     grade INTEGER NOT NULL CHECK(grade >= 2 AND grade <= 6),
     studentId TEXT,
+    type TEXT NOT NULL DEFAULT 'word' CHECK(type IN ('word', 'phrase', 'sentence')),
     status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'reviewed', 'mastered', 'error')),
     correctCount INTEGER DEFAULT 0,
     errorCount INTEGER DEFAULT 0,
@@ -69,6 +70,13 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_date ON daily_tasks(date);
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_studentId ON daily_tasks(studentId);
 `);
+
+// 为 vocabulary 表添加缺失的字段
+try {
+  db.prepare('ALTER TABLE vocabulary ADD COLUMN type TEXT DEFAULT "word"').run();
+} catch (e) {
+  // 列已存在，忽略
+}
 
 // 为 daily_tasks 表添加缺失的字段
 try {

@@ -191,14 +191,14 @@ router.get('/vocabulary', (req, res) => {
 
 router.post('/vocabulary', (req, res) => {
   try {
-    const { word, meaning, grade, status, studentId } = req.body;
+    const { word, meaning, grade, status, type, studentId } = req.body;
     const today = new Date().toISOString().split('T')[0];
     const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     db.prepare(`
-      INSERT INTO vocabulary (id, word, meaning, grade, studentId, status, correctCount, errorCount, addedAt, isCustom)
-      VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 1)
-    `).run(id, word, meaning, grade, studentId || null, status || 'new', today);
+      INSERT INTO vocabulary (id, word, meaning, grade, type, studentId, status, correctCount, errorCount, addedAt, isCustom)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 1)
+    `).run(id, word, meaning, grade, type || 'word', studentId || null, status || 'new', today);
 
     res.json({ id, message: '词汇添加成功' });
   } catch (error) {
@@ -259,14 +259,14 @@ router.post('/vocabulary/bulk', (req, res) => {
     let count = 0;
 
     const insert = db.prepare(`
-      INSERT INTO vocabulary (id, word, meaning, grade, studentId, status, correctCount, errorCount, addedAt, isCustom)
-      VALUES (?, ?, ?, ?, ?, 'reviewed', 0, 0, ?, 1)
+      INSERT INTO vocabulary (id, word, meaning, grade, type, studentId, status, correctCount, errorCount, addedAt, isCustom)
+      VALUES (?, ?, ?, ?, ?, ?, 'reviewed', 0, 0, ?, 1)
     `);
 
     const insertMany = db.transaction((items: any[]) => {
       for (const item of items) {
         const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        insert.run(id, item.word, item.meaning, item.grade, studentId || null, today);
+        insert.run(id, item.word, item.meaning, item.grade, item.type || 'word', studentId || null, today);
         count++;
       }
     });

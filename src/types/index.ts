@@ -24,6 +24,7 @@ export interface Vocabulary {
   meaning: string;
   grade: number;
   studentId?: string;
+  type: 'word' | 'phrase' | 'sentence';
   status: 'new' | 'reviewed' | 'mastered' | 'error';
   correctCount: number;
   errorCount: number;

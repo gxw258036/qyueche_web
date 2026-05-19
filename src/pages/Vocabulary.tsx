@@ -24,11 +24,13 @@ const Vocabulary: React.FC = () => {
     word: string;
     meaning: string;
     grade: number;
+    type: 'word' | 'phrase' | 'sentence';
     status: 'new' | 'reviewed' | 'mastered' | 'error';
   }>({
     word: '',
     meaning: '',
     grade: settings.currentGrade,
+    type: 'word',
     status: 'new',
   });
   const [bulkInput, setBulkInput] = useState('');
@@ -99,7 +101,7 @@ const Vocabulary: React.FC = () => {
     if (editingWord) {
       await updateVocabulary(editingWord.id, formData.word, formData.meaning, formData.grade, formData.status);
     } else {
-      await addVocabulary(formData.word, formData.meaning, formData.grade);
+      await addVocabulary(formData.word, formData.meaning, formData.grade, formData.type);
     }
     resetForm();
     setShowAddModal(false);
@@ -111,6 +113,7 @@ const Vocabulary: React.FC = () => {
       word: word.word,
       meaning: word.meaning,
       grade: word.grade,
+      type: word.type || 'word',
       status: word.status,
     });
     setShowAddModal(true);
@@ -127,6 +130,7 @@ const Vocabulary: React.FC = () => {
       word: '',
       meaning: '',
       grade: settings.currentGrade,
+      type: 'word',
       status: 'new',
     });
     setEditingWord(null);
@@ -163,6 +167,15 @@ const Vocabulary: React.FC = () => {
       error: { text: '需复习', color: 'bg-red-100 text-red-700', icon: XCircle },
     };
     return badges[status as keyof typeof badges] || badges.new;
+  };
+
+  const getTypeBadge = (type: string) => {
+    const badges = {
+      word: { text: '单词', color: 'bg-gray-100 text-gray-700' },
+      phrase: { text: '词组', color: 'bg-purple-100 text-purple-700' },
+      sentence: { text: '句子', color: 'bg-indigo-100 text-indigo-700' },
+    };
+    return badges[type as keyof typeof badges] || badges.word;
   };
 
   if (loading) {
@@ -298,6 +311,9 @@ const Vocabulary: React.FC = () => {
                           <Icon size={12} />
                           {badge.text}
                         </span>
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${getTypeBadge(word.type).color}`}>
+                          {getTypeBadge(word.type).text}
+                        </span>
                         {word.isCustom && (
                           <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">自定义</span>
                         )}
@@ -372,6 +388,18 @@ const Vocabulary: React.FC = () => {
                     {[2, 3, 4, 5, 6].map((grade) => (
                       <option key={grade} value={grade}>{grade}年级</option>
                     ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">类型</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="word">单词</option>
+                    <option value="phrase">词组</option>
+                    <option value="sentence">句子</option>
                   </select>
                 </div>
                 <div>
