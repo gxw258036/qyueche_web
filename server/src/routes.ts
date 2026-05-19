@@ -330,52 +330,82 @@ router.post('/daily-task/generate', (req, res) => {
     const { grade, studentId } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
-    const config: Record<number, { total: number; newCount: number; reviewCount: number }> = {
-      2: { total: 30, newCount: 10, reviewCount: 20 },
-      3: { total: 30, newCount: 10, reviewCount: 20 },
-      4: { total: 30, newCount: 10, reviewCount: 20 },
-      5: { total: 40, newCount: 15, reviewCount: 25 },
-      6: { total: 40, newCount: 15, reviewCount: 25 },
-    };
+    const TARGET_COUNT = 30;
 
-    const cfg = config[Number(grade)] || config[4];
-
-    const newWords = db.prepare(`
+    const allVocabulary = db.prepare(`
       SELECT * FROM vocabulary
-      WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'new'
-      ORDER BY RANDOM()
-      LIMIT ?
-    `).all(Number(grade), studentId || null, cfg.newCount);
-
-    const errorWords = db.prepare(`
-      SELECT * FROM vocabulary
-      WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'error'
-      ORDER BY RANDOM()
+      WHERE grade = ? AND (studentId = ? OR studentId IS NULL)
+      ORDER BY 
+        CASE status 
+          WHEN 'error' THEN 1 
+          WHEN 'new' THEN 2 
+          WHEN 'reviewed' THEN 3 
+          WHEN 'mastered' THEN 4 
+        END,
+        RANDOM()
     `).all(Number(grade), studentId || null);
 
-    const reviewedWords = db.prepare(`
-      SELECT * FROM vocabulary
-      WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status IN ('reviewed', 'mastered')
-      ORDER BY RANDOM()
-      LIMIT ?
-    `).all(Number(grade), studentId || null, cfg.reviewCount);
-
-    const reviewPool: any[] = [...errorWords, ...reviewedWords];
-    let selectedReview = reviewPool.slice(0, cfg.reviewCount);
-
-    if (selectedReview.length < cfg.reviewCount) {
-      const extra = db.prepare(`
-        SELECT * FROM vocabulary
-        WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status NOT IN ('new')
-        ORDER BY RANDOM()
-        LIMIT ?
-      `).all(Number(grade), studentId || null, cfg.reviewCount - selectedReview.length);
-      selectedReview = [...selectedReview, ...extra];
+    if (allVocabulary.length === 0) {
+      res.json({
+        id: null,
+        date: today,
+        grade: Number(grade),
+        studentId,
+        newWords: [],
+        reviewedWords: [],
+        completed: false,
+        markedErrorWords: [],
+        message: '暂无词汇，请先添加词汇'
+      });
+      return;
     }
 
-    const allWords = [...newWords, ...selectedReview].sort(() => Math.random() - 0.5);
-    const newWordsResult = allWords.slice(0, cfg.newCount);
-    const reviewedWordsResult = allWords.slice(cfg.newCount);
+    const newWordsList: any[] = [];
+    const reviewedWordsList: any[] = [];
+    const usedIds = new Set<string>();
+
+    for (const vocab of allVocabulary) {
+      const v = vocab as Vocabulary;
+      if (usedIds.has(v.id)) continue;
+      
+      if (v.status === 'new' && newWordsList.length < 10) {
+        newWordsList.push(v);
+        usedIds.add(v.id);
+      } else if (v.status === 'error' || v.status === 'reviewed' || v.status === 'mastered') {
+        reviewedWordsList.push(v);
+        usedIds.add(v.id);
+      } else if (newWordsList.length < TARGET_COUNT && usedIds.size < allVocabulary.length) {
+        newWordsList.push(v);
+        usedIds.add(v.id);
+      }
+
+      if (usedIds.size >= TARGET_COUNT) break;
+    }
+
+    let currentCount = newWordsList.length + reviewedWordsList.length;
+    if (currentCount < TARGET_COUNT) {
+      const remaining = db.prepare(`
+        SELECT * FROM vocabulary
+        WHERE grade = ? AND (studentId = ? OR studentId IS NULL)
+        AND id NOT IN (${Array.from(usedIds).map(() => '?').join(',') || "''"})
+        ORDER BY RANDOM()
+        LIMIT ?
+      `).all(Number(grade), studentId || null, ...Array.from(usedIds), TARGET_COUNT - currentCount) as Vocabulary[];
+      
+      for (const vocab of remaining) {
+        if (vocab.status === 'new') {
+          newWordsList.push(vocab);
+        } else {
+          reviewedWordsList.push(vocab);
+        }
+        currentCount++;
+        if (currentCount >= TARGET_COUNT) break;
+      }
+    }
+
+    const allSelected = [...newWordsList, ...reviewedWordsList].sort(() => Math.random() - 0.5);
+    const finalNewWords = newWordsList.filter(w => allSelected.includes(w));
+    const finalReviewedWords = reviewedWordsList.filter(w => allSelected.includes(w));
 
     const taskId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
@@ -384,17 +414,17 @@ router.post('/daily-task/generate', (req, res) => {
     `).run(today, Number(grade), studentId || null);
 
     db.prepare(`
-      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords)
-      VALUES (?, ?, ?, ?, 0, '[]')
-    `).run(taskId, today, Number(grade), studentId || null);
+      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords, newWords, reviewedWords)
+      VALUES (?, ?, ?, ?, 0, '[]', ?, ?)
+    `).run(taskId, today, Number(grade), studentId || null, JSON.stringify(finalNewWords), JSON.stringify(finalReviewedWords));
 
     res.json({
       id: taskId,
       date: today,
       grade: Number(grade),
       studentId,
-      newWords: newWordsResult,
-      reviewedWords: reviewedWordsResult,
+      newWords: finalNewWords,
+      reviewedWords: finalReviewedWords,
       completed: false,
       markedErrorWords: []
     });

@@ -26,7 +26,7 @@ interface Store {
   bulkDeleteVocabulary: (ids: string[]) => Promise<void>;
   bulkAddVocabulary: (words: { word: string; meaning: string; grade: number }[], studentId?: string) => Promise<void>;
 
-  loadDailyTask: () => Promise<void>;
+  loadDailyTask: () => Promise<DailyTask | null>;
   generateDailyTask: () => Promise<void>;
   completeDailyTask: (errorWordIds: string[]) => Promise<void>;
   loadDailyTaskHistory: (limit?: number) => Promise<DailyTaskHistory[]>;
@@ -168,8 +168,10 @@ export const useStore = create<Store>((set, get) => ({
       const { settings, currentStudent } = get();
       const task = await api.dailyTask.get(settings.currentGrade, currentStudent?.id);
       set({ dailyTask: task });
+      return task;
     } catch (error) {
       set({ error: '获取任务失败' });
+      return null;
     }
   },
 

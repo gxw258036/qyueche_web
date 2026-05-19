@@ -19,23 +19,21 @@ const Daily: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      await loadDailyTask();
+      const task = await loadDailyTask();
+      if (!task) {
+        await generateDailyTask();
+      } else {
+        if (task.markedErrorWords) {
+          setSelectedErrors(task.markedErrorWords);
+        }
+        if (task.completed) {
+          setIsComplete(true);
+        }
+      }
       setLoading(false);
     };
     init();
   }, []);
-
-  useEffect(() => {
-    if (!loading && !dailyTask) {
-      generateDailyTask();
-    }
-    if (dailyTask?.markedErrorWords) {
-      setSelectedErrors(dailyTask.markedErrorWords);
-    }
-    if (dailyTask?.completed) {
-      setIsComplete(true);
-    }
-  }, [dailyTask, loading]);
 
   const allWords: Vocabulary[] = dailyTask 
     ? [...(dailyTask.newWords || []), ...(dailyTask.reviewedWords || [])] 
