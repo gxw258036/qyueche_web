@@ -269,37 +269,42 @@ router.get('/daily-task', (req, res) => {
     const today = new Date().toISOString().split('T')[0];
 
     const task = db.prepare('SELECT * FROM daily_tasks WHERE date = ? AND grade = ? AND (studentId = ? OR studentId IS NULL)')
-      .get(today, Number(grade), studentId || null);
+      .get(today, Number(grade), studentId || null) as any;
 
     if (task) {
-      const vocabIds = (task as any).markedErrorWords
-        ? JSON.parse((task as any).markedErrorWords)
-        : [];
+      let newWords: Vocabulary[] = [];
+      let reviewedWords: Vocabulary[] = [];
+      let markedErrorWords: string[] = [];
 
-      const newWords = db.prepare(`
-        SELECT * FROM vocabulary 
-        WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'new' 
-        ORDER BY RANDOM()
-        LIMIT 10
-      `).all(Number(grade), studentId || null);
-
-      const reviewedWords = db.prepare(`
-        SELECT * FROM vocabulary 
-        WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status IN ('reviewed', 'mastered', 'error') 
-        ORDER BY RANDOM()
-        LIMIT 20
-      `).all(Number(grade), studentId || null);
+      try {
+        if (task.newWords) {
+          newWords = JSON.parse(task.newWords);
+        }
+        if (task.reviewedWords) {
+          reviewedWords = JSON.parse(task.reviewedWords);
+        }
+        if (task.markedErrorWords) {
+          markedErrorWords = JSON.parse(task.markedErrorWords);
+        }
+      } catch (e) {
+        console.error('解析单词数据失败:', e);
+      }
 
       res.json({
-        ...task,
+        id: task.id,
+        date: task.date,
+        grade: task.grade,
+        studentId: task.studentId,
+        completed: task.completed === 1,
         newWords,
         reviewedWords,
-        markedErrorWords: vocabIds
+        markedErrorWords
       });
     } else {
       res.json(null);
     }
   } catch (error) {
+    console.error('获取任务失败:', error);
     res.status(500).json({ error: '获取任务失败' });
   }
 });
@@ -363,9 +368,9 @@ router.post('/daily-task/generate', (req, res) => {
     `).run(today, Number(grade), studentId || null);
 
     db.prepare(`
-      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords, newWords, reviewedWords)
-      VALUES (?, ?, ?, ?, 0, '[]', ?, ?)
-    `).run(taskId, today, Number(grade), studentId || null, JSON.stringify(newWordsResult), JSON.stringify(reviewedWordsResult));
+      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords)
+      VALUES (?, ?, ?, ?, 0, '[]')
+    `).run(taskId, today, Number(grade), studentId || null);
 
     res.json({
       id: taskId,
@@ -385,7 +390,7 @@ router.post('/daily-task/generate', (req, res) => {
 
 router.post('/daily-task/complete', (req, res) => {
   try {
-    const { taskId, errorWordIds = [], studentId } = req.body;
+    const { taskId, errorWordIds, studentId } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     db.prepare(`
@@ -394,64 +399,41 @@ router.post('/daily-task/complete', (req, res) => {
       WHERE id = ?
     `).run(JSON.stringify(errorWordIds), taskId);
 
-    const task = db.prepare('SELECT * FROM daily_tasks WHERE id = ?').get(taskId) as any;
-    const allWordIds: string[] = [];
-    
-    if (task.newWords) {
-      const newWords = JSON.parse(task.newWords);
-      allWordIds.push(...newWords.map((w: any) => w.id));
-    }
-    if (task.reviewedWords) {
-      const reviewedWords = JSON.parse(task.reviewedWords);
-      allWordIds.push(...reviewedWords.map((w: any) => w.id));
-    }
-
-    const correctWordIds = allWordIds.filter(id => !errorWordIds.includes(id));
-
-    const updateError = db.prepare(`
+    const updateVocab = db.prepare(`
       UPDATE vocabulary
-      SET status = 'error', errorCount = errorCount + 1, correctCount = 0, lastReviewedAt = ?, updatedAt = ?
+      SET status = ?, errorCount = errorCount + 1, lastReviewedAt = ?, updatedAt = ?
       WHERE id = ?
     `);
-
-    if (errorWordIds && errorWordIds.length > 0) {
-      db.transaction((ids: string[]) => {
-        for (const id of ids) {
-          updateError.run(today, today, id);
-        }
-      })(errorWordIds);
-    }
 
     const updateCorrect = db.transaction((ids: string[]) => {
       for (const id of ids) {
         const vocab = db.prepare('SELECT * FROM vocabulary WHERE id = ?').get(id) as any;
         if (vocab) {
-          const newCorrectCount = vocab.correctCount + 1;
-          if (newCorrectCount >= 3) {
+          if (vocab.correctCount >= 3) {
             db.prepare(`
               UPDATE vocabulary
-              SET status = 'mastered', correctCount = ?, lastReviewedAt = ?, updatedAt = ?
+              SET status = 'mastered', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(newCorrectCount, today, today, id);
+            `).run(today, today, id);
           } else if (vocab.status === 'new') {
             db.prepare(`
               UPDATE vocabulary
-              SET status = 'reviewed', correctCount = ?, lastReviewedAt = ?, updatedAt = ?
+              SET status = 'reviewed', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(newCorrectCount, today, today, id);
+            `).run(today, today, id);
           } else {
             db.prepare(`
               UPDATE vocabulary
-              SET correctCount = ?, lastReviewedAt = ?, updatedAt = ?
+              SET correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(newCorrectCount, today, today, id);
+            `).run(today, today, id);
           }
         }
       }
     });
 
-    if (correctWordIds && correctWordIds.length > 0) {
-      updateCorrect(correctWordIds);
+    if (errorWordIds && errorWordIds.length > 0) {
+      updateCorrect(errorWordIds);
     }
 
     const updateFields: string[] = ['lastStudyDate = ?'];
@@ -469,8 +451,56 @@ router.post('/daily-task/complete', (req, res) => {
 
     res.json({ message: '任务完成' });
   } catch (error) {
-    console.error('完成任务失败:', error);
     res.status(500).json({ error: '完成任务失败' });
+  }
+});
+
+router.get('/daily-task/history', (req, res) => {
+  try {
+    const grade = req.query.grade as string;
+    const studentId = req.query.studentId as string;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 30;
+
+    const tasks = db.prepare(`
+      SELECT * FROM daily_tasks 
+      WHERE grade = ? 
+      AND (studentId = ? OR studentId IS NULL)
+      AND completed = 1
+      ORDER BY date DESC
+      LIMIT ?
+    `).all(Number(grade), studentId || null, limit) as any[];
+
+    const history = tasks.map(task => {
+      let totalCount = 0;
+      let correctCount = 0;
+      let errorCount = 0;
+      
+      try {
+        const newWords = task.newWords ? JSON.parse(task.newWords) : [];
+        const reviewedWords = task.reviewedWords ? JSON.parse(task.reviewedWords) : [];
+        totalCount = newWords.length + reviewedWords.length;
+        
+        const markedErrorWords = task.markedErrorWords ? JSON.parse(task.markedErrorWords) : [];
+        errorCount = markedErrorWords.length;
+        correctCount = totalCount - errorCount;
+      } catch (e) {
+        // 如果解析失败，使用默认值
+      }
+
+      return {
+        id: task.id,
+        date: task.date,
+        grade: task.grade,
+        totalCount,
+        correctCount,
+        errorCount
+      };
+    });
+
+    res.json(history);
+  } catch (error) {
+    console.error('获取历史记录失败:', error);
+    res.status(500).json({ error: '获取历史记录失败' });
   }
 });
 

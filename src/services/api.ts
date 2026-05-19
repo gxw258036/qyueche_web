@@ -1,4 +1,4 @@
-import { Vocabulary, DailyTask, Settings, Statistics, Student } from '@/types';
+import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory } from '@/types';
 
 const API_BASE = '/api';
 

@@ -27,8 +27,7 @@ const Daily: React.FC = () => {
 
   useEffect(() => {
     if (!loading && !dailyTask) {
-      setSelectedErrors([]);
-      setIsComplete(false);
+      generateDailyTask();
     }
     if (dailyTask?.markedErrorWords) {
       setSelectedErrors(dailyTask.markedErrorWords);
@@ -92,14 +91,8 @@ const Daily: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="mx-auto mb-4 text-orange-500" size={48} />
-          <p className="text-xl text-gray-600 mb-6">暂无今日任务</p>
-          <button
-            onClick={handleRegenerate}
-            className="px-8 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-all"
-          >
-            生成今日任务
-          </button>
+          <RefreshCw className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
+          <p className="text-xl text-gray-600">正在生成今日任务...</p>
         </div>
       </div>
     );

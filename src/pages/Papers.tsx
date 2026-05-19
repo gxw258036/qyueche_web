@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { FileText, AlertCircle, Download, Printer, Eye } from 'lucide-react';
 import { Vocabulary } from '@/types';
-import { generatePDF, printPaper, getPreviewHTML } from '@/utils/pdf';
+import { generatePDF, printPaper } from '@/utils/pdf';
 
 const Papers: React.FC = () => {
   const { settings, vocabulary, dailyTask, loadVocabulary, loadDailyTask } = useStore();
@@ -13,7 +13,6 @@ const Papers: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [customWordCount, setCustomWordCount] = useState(20);
   const [loading, setLoading] = useState(true);
-  const [previewHTML, setPreviewHTML] = useState('');
 
   useEffect(() => {
     const init = async () => {
@@ -46,22 +45,20 @@ const Papers: React.FC = () => {
   const handlePreview = () => {
     const words = getWordsForPaper();
     setPreviewWords(words);
-    const html = getPreviewHTML(words, showAnswers, paperType);
-    setPreviewHTML(html);
     setShowPreview(true);
   };
 
   const handleGeneratePDF = async () => {
     const words = getWordsForPaper();
     if (words.length > 0) {
-      await generatePDF(words, showAnswers, paperType);
+      await generatePDF(words, showAnswers);
     }
   };
 
   const handlePrint = async () => {
     const words = getWordsForPaper();
     if (words.length > 0) {
-      await printPaper(words, showAnswers, paperType);
+      await printPaper(words, showAnswers);
     }
   };
 
@@ -78,7 +75,7 @@ const Papers: React.FC = () => {
     switch (paperType) {
       case 'daily':
         return dailyTask 
-          ? `共 ${(dailyTask.newWords?.length || 0) + (dailyTask.reviewedWords?.length || 0)} 个词汇`
+          ? `共 ${(dailyTask.newWords?.length || 0) + (dailyTask.reviewedWords?.length || 0)} 个词汇，含 ${dailyTask.newWords?.length || 0} 个新词`
           : '请先生成今日任务';
       case 'error':
         return `共 ${errorVocabulary.length} 个错题需要复习`;
@@ -214,9 +211,9 @@ const Papers: React.FC = () => {
         </div>
 
         {showPreview && (
-          <div className="bg-white rounded-2xl shadow-lg p-4">
-            <div className="flex items-center justify-between mb-4 p-4 border-b">
-              <h2 className="text-xl font-bold text-gray-800">试卷预览</h2>
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">试卷预览</h2>
               <button
                 onClick={() => setShowPreview(false)}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
@@ -224,12 +221,36 @@ const Papers: React.FC = () => {
                 关闭
               </button>
             </div>
-            <iframe
-              srcDoc={previewHTML}
-              title="试卷预览"
-              className="w-full border-2 border-gray-200 rounded-xl"
-              style={{ height: '800px' }}
-            />
+
+            <div id="paper-preview" className="border-2 border-gray-200 rounded-xl p-8">
+              <div className="text-center mb-8">
+                <h1 className="text-2xl font-bold text-gray-800 mb-2">{getPaperTitle()}</h1>
+                <p className="text-gray-600">
+                  {settings.currentGrade}年级 · {new Date().toLocaleDateString('zh-CN')}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {previewWords.map((word, index) => (
+                  <div key={word.id} className="flex items-center gap-4 border-b border-gray-100 pb-4">
+                    <span className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-sm font-semibold text-gray-600">
+                      {index + 1}
+                    </span>
+                    <div className="flex-1">
+                      <div className="text-lg font-medium text-gray-800 mb-1">{word.meaning}</div>
+                      <div
+                        className="h-8 border-b-2 border-gray-300"
+                        style={{
+                          color: showAnswers ? '#1f2937' : 'transparent',
+                        }}
+                      >
+                        {showAnswers && word.word}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
