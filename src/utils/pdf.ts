@@ -11,46 +11,74 @@ export const generatePDF = async (words: Vocabulary[], showAnswers: boolean) => 
 
   const pageWidth = 210;
   const pageHeight = 297;
-  const margin = 20;
-  const lineHeight = 12;
-  let yPosition = margin + 20;
+  const margin = 15;
+  const lineHeight = 10;
+  const wordsPerColumn = 20;
+  const columnWidth = (pageWidth - margin * 3) / 2;
 
-  // Title
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.text('英语默写练习', pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 15;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(12);
-  doc.text(new Date().toLocaleDateString('zh-CN'), pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 20;
-
-  // Words
-  doc.setFontSize(14);
-  words.forEach((word, index) => {
-    if (yPosition > pageHeight - margin - 20) {
-      doc.addPage();
-      yPosition = margin + 20;
-    }
+  const processPage = (startIndex: number) => {
+    let yPosition = margin + 20;
 
     doc.setFont('helvetica', 'bold');
-    doc.text(`${index + 1}. ${word.meaning}`, margin, yPosition);
-    yPosition += 8;
+    doc.setFontSize(16);
+    doc.text('英语默写练习', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 12;
 
     doc.setFont('helvetica', 'normal');
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    
-    if (showAnswers) {
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(100, 100, 100);
-      doc.text(word.word, margin, yPosition - 2);
-      doc.setTextColor(0, 0, 0);
+    doc.setFontSize(11);
+    doc.text(new Date().toLocaleDateString('zh-CN'), pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 15;
+
+    doc.setFontSize(12);
+    const column1Words = words.slice(startIndex, startIndex + wordsPerColumn);
+    const column2Words = words.slice(startIndex + wordsPerColumn, startIndex + wordsPerColumn * 2);
+
+    column1Words.forEach((word, index) => {
+      const actualIndex = startIndex + index;
+      const currentY = yPosition + index * (lineHeight + 8);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${actualIndex + 1}. ${word.meaning}`, margin, currentY);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setLineWidth(0.4);
+      doc.line(margin, currentY + 6, margin + columnWidth, currentY + 6);
+      
+      if (showAnswers) {
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(100, 100, 100);
+        doc.text(word.word, margin, currentY + 4);
+        doc.setTextColor(0, 0, 0);
+      }
+    });
+
+    const rightColumnX = margin + columnWidth + margin;
+    column2Words.forEach((word, index) => {
+      const actualIndex = startIndex + wordsPerColumn + index;
+      const currentY = yPosition + index * (lineHeight + 8);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${actualIndex + 1}. ${word.meaning}`, rightColumnX, currentY);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setLineWidth(0.4);
+      doc.line(rightColumnX, currentY + 6, rightColumnX + columnWidth, currentY + 6);
+      
+      if (showAnswers) {
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(100, 100, 100);
+        doc.text(word.word, rightColumnX, currentY + 4);
+        doc.setTextColor(0, 0, 0);
+      }
+    });
+  };
+
+  for (let i = 0; i < words.length; i += wordsPerColumn * 2) {
+    if (i > 0) {
+      doc.addPage();
     }
-    
-    yPosition += lineHeight + 5;
-  });
+    processPage(i);
+  }
 
   doc.save('english-vocabulary-practice.pdf');
 };
@@ -59,22 +87,44 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
 
-  const wordsHTML = words
-    .map(
-      (word, index) => `
-      <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
-        <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">
-          ${index + 1}. ${word.meaning}
+  const wordsPerColumn = 20;
+  
+  const generateColumnHTML = (columnWords: Vocabulary[], startIndex: number) => {
+    return columnWords.map((word, index) => {
+      const actualIndex = startIndex + index;
+      return `
+        <div style="margin-bottom: 12px;">
+          <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">
+            ${actualIndex + 1}. ${word.meaning}
+          </div>
+          <div style="height: 24px; border-bottom: 1px solid #9ca3af; ${
+            showAnswers ? 'color: #6b7280; font-style: italic; font-size: 12px;' : ''
+          }">
+            ${showAnswers ? word.word : ''}
+          </div>
         </div>
-        <div style="height: 30px; border-bottom: 2px solid #9ca3af; ${
-          showAnswers ? 'color: #6b7280; font-style: italic;' : ''
-        }">
-          ${showAnswers ? word.word : ''}
+      `;
+    }).join('');
+  };
+
+  const pages: string[] = [];
+  for (let i = 0; i < words.length; i += wordsPerColumn * 2) {
+    const column1Words = words.slice(i, i + wordsPerColumn);
+    const column2Words = words.slice(i + wordsPerColumn, i + wordsPerColumn * 2);
+    
+    pages.push(`
+      <div class="page">
+        <div class="header">
+          <div class="title">英语默写练习</div>
+          <div class="date">${new Date().toLocaleDateString('zh-CN')}</div>
+        </div>
+        <div class="columns">
+          <div class="column">${generateColumnHTML(column1Words, i)}</div>
+          <div class="column">${generateColumnHTML(column2Words, i + wordsPerColumn)}</div>
         </div>
       </div>
-    `
-    )
-    .join('');
+    `);
+  }
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -82,35 +132,55 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
       <head>
         <title>英语默写练习</title>
         <style>
+          @page {
+            size: A4;
+            margin: 15mm;
+          }
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
+            margin: 0;
+            padding: 0;
+          }
+          .page {
+            page-break-after: always;
+            padding: 10px;
+          }
+          .page:last-child {
+            page-break-after: avoid;
           }
           .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
           }
           .title {
-            font-size: 28px;
+            font-size: 20px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
           }
           .date {
             color: #6b7280;
+            font-size: 12px;
+          }
+          .columns {
+            display: flex;
+            gap: 20px;
+          }
+          .column {
+            flex: 1;
           }
           @media print {
-            body { padding: 20px; }
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .page {
+              padding: 0;
+            }
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="title">英语默写练习</div>
-          <div class="date">${new Date().toLocaleDateString('zh-CN')}</div>
-        </div>
-        ${wordsHTML}
+        ${pages.join('')}
       </body>
     </html>
   `);
