@@ -20,22 +20,49 @@ const Daily: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+    
     const init = async () => {
-      const task = await loadDailyTask();
-      if (!task) {
-        await generateDailyTask();
-      } else {
-        if (task.markedErrorWords) {
-          setSelectedErrors(task.markedErrorWords);
+      try {
+        const task = await loadDailyTask();
+        if (!mounted) return;
+        
+        if (!task) {
+          await generateDailyTask();
+        } else {
+          if (task.markedErrorWords) {
+            setSelectedErrors(task.markedErrorWords);
+          }
+          if (task.completed) {
+            setIsComplete(true);
+          }
         }
-        if (task.completed) {
-          setIsComplete(true);
+      } catch (error) {
+        console.error('初始化任务失败:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
         }
       }
-      setLoading(false);
     };
+    
     init();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
+
+  useEffect(() => {
+    if (dailyTask) {
+      if (dailyTask.markedErrorWords) {
+        setSelectedErrors(dailyTask.markedErrorWords);
+      }
+      if (dailyTask.completed) {
+        setIsComplete(true);
+      }
+    }
+  }, [dailyTask]);
 
   const allWords: Vocabulary[] = dailyTask 
     ? [...(dailyTask.newWords || []), ...(dailyTask.reviewedWords || [])] 
@@ -87,7 +114,7 @@ const Daily: React.FC = () => {
     );
   }
 
-  if (!dailyTask) {
+  if (!dailyTask || (allWords.length === 0 && !loading)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">

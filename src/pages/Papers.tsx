@@ -5,7 +5,7 @@ import { Vocabulary } from '@/types';
 import { generatePDF, printPaper } from '@/utils/pdf';
 
 const Papers: React.FC = () => {
-  const { settings, vocabulary, dailyTask, loadVocabulary, loadDailyTask } = useStore();
+  const { settings, vocabulary, dailyTask, loadVocabulary } = useStore();
 
   const [paperType, setPaperType] = useState<'daily' | 'error' | 'custom'>('daily');
   const [showAnswers, setShowAnswers] = useState(false);
@@ -17,7 +17,6 @@ const Papers: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       await loadVocabulary();
-      await loadDailyTask();
       setLoading(false);
     };
     init();
