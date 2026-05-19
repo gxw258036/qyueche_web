@@ -209,14 +209,14 @@ router.post('/vocabulary', (req, res) => {
 router.put('/vocabulary/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { word, meaning, grade, status } = req.body;
+    const { word, meaning, grade, type, status } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     db.prepare(`
       UPDATE vocabulary 
-      SET word = ?, meaning = ?, grade = ?, status = ?, updatedAt = ?
+      SET word = ?, meaning = ?, grade = ?, type = ?, status = ?, updatedAt = ?
       WHERE id = ?
-    `).run(word, meaning, grade, status, today, id);
+    `).run(word, meaning, grade, type || 'word', status, today, id);
 
     res.json({ message: '词汇更新成功' });
   } catch (error) {

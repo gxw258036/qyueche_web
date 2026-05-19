@@ -48,7 +48,7 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       }).then(res => res.json()),
-    update: (id: string, data: { word: string; meaning: string; grade: number; status: string }) =>
+    update: (id: string, data: { word: string; meaning: string; grade: number; type?: string; status: string }) =>
       fetch(`${API_BASE}/vocabulary/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

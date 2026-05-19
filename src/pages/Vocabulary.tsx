@@ -99,7 +99,7 @@ const Vocabulary: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingWord) {
-      await updateVocabulary(editingWord.id, formData.word, formData.meaning, formData.grade, formData.status);
+      await updateVocabulary(editingWord.id, formData.word, formData.meaning, formData.grade, formData.status, formData.type);
     } else {
       await addVocabulary(formData.word, formData.meaning, formData.grade, formData.type);
     }
