@@ -12,6 +12,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
   const [history, setHistory] = useState<DailyTaskHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [wordFilter, setWordFilter] = useState<'all' | 'correct' | 'error'>('all');
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -39,6 +40,17 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
 
   const getAllWords = (task: DailyTaskHistory): Vocabulary[] => {
     return [...task.newWords, ...task.reviewedWords];
+  };
+
+  const getFilteredWords = (task: DailyTaskHistory): Vocabulary[] => {
+    const allWords = getAllWords(task);
+    if (wordFilter === 'all') {
+      return allWords;
+    } else if (wordFilter === 'correct') {
+      return allWords.filter(word => !isErrorWord(word.id, task));
+    } else {
+      return allWords.filter(word => isErrorWord(word.id, task));
+    }
   };
 
   const isErrorWord = (wordId: string, task: DailyTaskHistory): boolean => {
@@ -136,9 +148,52 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
                   {expandedId === task.id && getAllWords(task).length > 0 && (
                     <div className="px-4 pb-4 border-t border-gray-200">
                       <div className="pt-4">
-                        <h4 className="font-medium text-gray-700 mb-3">默写单词列表</h4>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-gray-700">默写单词列表</h4>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setWordFilter('all');
+                              }}
+                              className={`px-3 py-1 rounded-lg text-sm ${
+                                wordFilter === 'all'
+                                  ? 'bg-blue-500 text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              全部 ({getAllWords(task).length})
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setWordFilter('correct');
+                              }}
+                              className={`px-3 py-1 rounded-lg text-sm ${
+                                wordFilter === 'correct'
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              正确 ({task.correctCount})
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setWordFilter('error');
+                              }}
+                              className={`px-3 py-1 rounded-lg text-sm ${
+                                wordFilter === 'error'
+                                  ? 'bg-red-500 text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              错误 ({task.errorCount})
+                            </button>
+                          </div>
+                        </div>
                         <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-                          {getAllWords(task).map((word) => (
+                          {getFilteredWords(task).map((word) => (
                             <div
                               key={word.id}
                               className={`flex items-center justify-between p-2 rounded-lg ${
@@ -158,6 +213,11 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
                               )}
                             </div>
                           ))}
+                          {getFilteredWords(task).length === 0 && (
+                            <div className="col-span-2 text-center py-8 text-gray-500 text-sm">
+                              没有符合条件的单词
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
