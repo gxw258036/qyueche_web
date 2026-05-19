@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { Plus, Edit, Trash2, Search, Filter, BookOpen, CheckCircle2, XCircle, Clock, X, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Filter, BookOpen, CheckCircle2, XCircle, Clock, X } from 'lucide-react';
 import { Vocabulary as VocabularyType } from '@/types';
-import { api } from '@/services/api';
 
 const Vocabulary: React.FC = () => {
   const {
@@ -37,8 +36,6 @@ const Vocabulary: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [wordErrorDetails, setWordErrorDetails] = useState<Record<string, any>>({});
-  const [expandedWordId, setExpandedWordId] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -57,32 +54,6 @@ const Vocabulary: React.FC = () => {
   useEffect(() => {
     setGradeFilter(settings.currentGrade);
   }, [settings.currentGrade]);
-
-  useEffect(() => {
-    const fetchWordErrorDetails = async () => {
-      const errorWords = vocabulary.filter(v => v.errorCount > 0);
-      const details: Record<string, any> = {};
-      
-      for (const word of errorWords.slice(0, 20)) {
-        try {
-          const wordStats = await api.vocabulary.getStats(word.id);
-          details[word.id] = wordStats;
-        } catch (error) {
-          console.error('获取词汇错误详情失败:', error);
-        }
-      }
-      
-      setWordErrorDetails(details);
-    };
-
-    if (!loading && vocabulary.length > 0) {
-      fetchWordErrorDetails();
-    }
-  }, [vocabulary, loading]);
-
-  const toggleExpandWord = (wordId: string) => {
-    setExpandedWordId(expandedWordId === wordId ? null : wordId);
-  };
 
   const filteredVocabulary = vocabulary.filter(word => {
     const matchesSearch = !searchTerm || 
@@ -335,35 +306,8 @@ const Vocabulary: React.FC = () => {
                       <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                         <span>年级: {word.grade}</span>
                         <span>正确: {word.correctCount}</span>
-                        <span className="flex items-center gap-1">
-                          错误: {word.errorCount}
-                          {word.errorCount > 0 && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleExpandWord(word.id);
-                              }}
-                              className="ml-1 p-1 hover:bg-gray-200 rounded"
-                              title="查看错误详情"
-                            >
-                              <AlertCircle size={12} className="text-red-500" />
-                            </button>
-                          )}
-                        </span>
+                        <span>错误: {word.errorCount}</span>
                       </div>
-                      {expandedWordId === word.id && wordErrorDetails[word.id]?.errorDates && (
-                        <div className="mt-2 p-2 bg-red-50 rounded-lg text-xs text-red-600">
-                          <div className="font-medium mb-1">错误日期:</div>
-                          <div className="space-y-1">
-                            {wordErrorDetails[word.id].errorDates.map((date: string, idx: number) => (
-                              <div key={idx} className="flex items-center gap-1">
-                                <XCircle size={10} />
-                                <span>{new Date(date).toLocaleDateString('zh-CN')}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

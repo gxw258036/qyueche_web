@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory } from '@/types';
+import { Vocabulary, DailyTask, Settings, Statistics, Student } from '@/types';
 import { api } from '@/services/api';
 
 interface Store {
@@ -27,8 +27,7 @@ interface Store {
 
   loadDailyTask: () => Promise<void>;
   generateDailyTask: () => Promise<void>;
-  completeDailyTask: (errorWordIds: string[], correctWordIds: string[]) => Promise<void>;
-  loadDailyTaskHistory: (limit?: number) => Promise<DailyTaskHistory[]>;
+  completeDailyTask: (errorWordIds: string[]) => Promise<void>;
 
   loadSettings: () => Promise<void>;
   updateSettings: (currentGrade?: number, currentStudentId?: string) => Promise<void>;
@@ -181,34 +180,17 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
-  completeDailyTask: async (errorWordIds, correctWordIds) => {
+  completeDailyTask: async (errorWordIds) => {
     try {
       const { dailyTask, currentStudent } = get();
       if (dailyTask) {
-        await api.dailyTask.complete(
-          dailyTask.id, 
-          errorWordIds, 
-          correctWordIds, 
-          currentStudent?.id,
-          dailyTask.totalCount
-        );
+        await api.dailyTask.complete(dailyTask.id, errorWordIds, currentStudent?.id);
         await get().loadDailyTask();
         await get().loadStatistics();
         await get().loadVocabulary();
       }
     } catch (error) {
       set({ error: '完成任务失败' });
-    }
-  },
-
-  loadDailyTaskHistory: async (limit = 30) => {
-    try {
-      const { settings, currentStudent } = get();
-      const history = await api.dailyTask.getHistory(settings.currentGrade, currentStudent?.id, limit);
-      return history;
-    } catch (error) {
-      set({ error: '获取历史失败' });
-      return [];
     }
   },
 

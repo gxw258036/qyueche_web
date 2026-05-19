@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { CheckCircle2, XCircle, Download, Printer, RefreshCw, History } from 'lucide-react';
+import { CheckCircle2, XCircle, Download, Printer, RefreshCw } from 'lucide-react';
 import { Vocabulary } from '@/types';
 import { generatePDF, printPaper } from '@/utils/pdf';
-import HistoryModal from '@/components/HistoryModal';
 
 const Daily: React.FC = () => {
   const {
@@ -17,7 +16,6 @@ const Daily: React.FC = () => {
   const [selectedErrors, setSelectedErrors] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -39,7 +37,9 @@ const Daily: React.FC = () => {
     }
   }, [dailyTask, loading]);
 
-  const allWords: Vocabulary[] = dailyTask?.allWords || [];
+  const allWords: Vocabulary[] = dailyTask 
+    ? [...(dailyTask.newWords || []), ...(dailyTask.reviewedWords || [])] 
+    : [];
 
   const toggleErrorWord = (wordId: string) => {
     setSelectedErrors(prev => {
@@ -52,11 +52,7 @@ const Daily: React.FC = () => {
   };
 
   const handleSaveErrors = async () => {
-    const correctWordIds = allWords
-      .filter(w => !selectedErrors.includes(w.id))
-      .map(w => w.id);
-    
-    await completeDailyTask(selectedErrors, correctWordIds);
+    await completeDailyTask(selectedErrors);
     setIsComplete(true);
   };
 
@@ -113,14 +109,7 @@ const Daily: React.FC = () => {
                 {settings.currentGrade}年级 · {new Date().toLocaleDateString('zh-CN')}
               </p>
             </div>
-            <div className="flex gap-3 flex-wrap">
-              <button
-                onClick={() => setShowHistory(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
-              >
-                <History size={18} />
-                历史记录
-              </button>
+            <div className="flex gap-3">
               <button
                 onClick={handleRegenerate}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
@@ -147,8 +136,12 @@ const Daily: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-orange-50 p-4 rounded-xl text-center">
-              <div className="text-3xl font-bold text-orange-600">{dailyTask.totalCount}</div>
-              <div className="text-sm text-orange-700">总词汇</div>
+              <div className="text-3xl font-bold text-orange-600">{(dailyTask.newWords || []).length}</div>
+              <div className="text-sm text-orange-700">新词</div>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-xl text-center">
+              <div className="text-3xl font-bold text-blue-600">{(dailyTask.reviewedWords || []).length}</div>
+              <div className="text-sm text-blue-700">旧词</div>
             </div>
             <div className="bg-green-50 p-4 rounded-xl text-center">
               <div className="text-3xl font-bold text-green-600">{allWords.length - selectedErrors.length}</div>
@@ -158,18 +151,13 @@ const Daily: React.FC = () => {
               <div className="text-3xl font-bold text-red-600">{selectedErrors.length}</div>
               <div className="text-sm text-red-700">错误</div>
             </div>
-            <div className="bg-blue-50 p-4 rounded-xl text-center">
-              <div className="text-3xl font-bold text-blue-600">
-                {allWords.length > 0 ? Math.round(((allWords.length - selectedErrors.length) / allWords.length) * 100) : 0}%
-              </div>
-              <div className="text-sm text-blue-700">正确率</div>
-            </div>
           </div>
 
           <div className="space-y-3">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">词汇列表</h2>
             {allWords.map((word, index) => {
               const isError = selectedErrors.includes(word.id);
+              const isNew = (dailyTask.newWords || []).some((w: any) => w.id === word.id);
               return (
                 <div
                   key={word.id}
@@ -186,7 +174,9 @@ const Daily: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-semibold text-gray-800">{word.meaning}</span>
-                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">新词</span>
+                        {isNew && (
+                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">新词</span>
+                        )}
                       </div>
                       <span className="text-sm text-gray-500">{word.word}</span>
                     </div>
@@ -235,8 +225,6 @@ const Daily: React.FC = () => {
           )}
         </div>
       </div>
-
-      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
     </div>
   );
 };

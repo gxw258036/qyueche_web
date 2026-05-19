@@ -20,8 +20,6 @@ export interface Vocabulary {
   isCustom: number;
   createdAt?: string;
   updatedAt?: string;
-  errorDates?: string[];
-  totalErrors?: number;
 }
 
 export interface DailyTask {
@@ -31,20 +29,8 @@ export interface DailyTask {
   studentId?: string;
   completed: boolean;
   markedErrorWords: string[];
-  allWords: Vocabulary[];
-  totalCount: number;
-}
-
-export interface DailyTaskHistory {
-  id: string;
-  date: string;
-  grade: number;
-  studentId?: string;
-  completed: number;
-  markedErrorWords: string;
-  correctCount: number;
-  errorCount: number;
-  totalCount: number;
+  newWords: Vocabulary[];
+  reviewedWords: Vocabulary[];
 }
 
 export interface Settings {
@@ -67,13 +53,6 @@ export interface Statistics {
   completedDays: number;
 }
 
-export interface WordErrorLog {
-  id: string;
-  vocabularyId: string;
-  date: string;
-  createdAt?: string;
-}
-
 export type Grade = 2 | 3 | 4 | 5 | 6;
 
 export const GRADES: Grade[] = [2, 3, 4, 5, 6];
@@ -82,6 +61,6 @@ export const GRADE_CONFIGS: Record<number, { total: number; newCount: number; re
   2: { total: 30, newCount: 10, reviewCount: 20 },
   3: { total: 30, newCount: 10, reviewCount: 20 },
   4: { total: 30, newCount: 10, reviewCount: 20 },
-  5: { total: 30, newCount: 10, reviewCount: 20 },
-  6: { total: 30, newCount: 10, reviewCount: 20 },
+  5: { total: 40, newCount: 15, reviewCount: 25 },
+  6: { total: 40, newCount: 15, reviewCount: 25 },
 };

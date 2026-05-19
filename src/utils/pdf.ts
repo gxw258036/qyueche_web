@@ -19,21 +19,32 @@ const createPrintTemplate = (
   showAnswers: boolean,
   title: string
 ): string => {
-  const wordsHTML = words
-    .map(
-      (word, index) => `
-      <div class="word-item">
-        <div class="word-number">${index + 1}.</div>
-        <div class="word-content">
-          <div class="word-meaning">${word.meaning}</div>
-          <div class="word-answer ${showAnswers ? 'show' : ''}">${
-        showAnswers ? word.word : ''
-      }</div>
-        </div>
-      </div>
-    `
-    )
-    .join('');
+  const columns = 2;
+  const wordsPerColumn = Math.ceil(words.length / columns);
+  
+  const columnsHTML = [];
+  for (let col = 0; col < columns; col++) {
+    const start = col * wordsPerColumn;
+    const end = Math.min(start + wordsPerColumn, words.length);
+    const columnWords = words.slice(start, end);
+    
+    const columnHTML = columnWords
+      .map((word, idx) => {
+        const globalIndex = start + idx;
+        return `
+          <div class="word-item">
+            <div class="word-number">${globalIndex + 1}.</div>
+            <div class="word-content">
+              <div class="word-meaning">${word.meaning}</div>
+              <div class="word-line ${showAnswers ? 'show' : ''}">${showAnswers ? word.word : ''}</div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+    
+    columnsHTML.push(`<div class="column">${columnHTML}</div>`);
+  }
 
   return `
     <!DOCTYPE html>
@@ -77,44 +88,43 @@ const createPrintTemplate = (
           }
           .words-container {
             display: flex;
+            gap: 20px;
+          }
+          .column {
+            flex: 1;
+            display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
           }
           .word-item {
             display: flex;
             align-items: flex-start;
-            padding: 10px 0;
-            border-bottom: 1px dashed #e5e7eb;
-            min-height: 36px;
+            padding: 8px 0;
+            min-height: 32px;
           }
           .word-number {
-            width: 30px;
-            font-size: 14px;
+            width: 28px;
+            font-size: 13px;
             font-weight: bold;
             color: #6b7280;
             flex-shrink: 0;
           }
           .word-content {
             flex: 1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
           }
           .word-meaning {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
-            flex: 1;
+            margin-bottom: 4px;
           }
-          .word-answer {
-            font-size: 16px;
-            color: #9ca3af;
-            min-width: 150px;
-            text-align: right;
-            border-bottom: 2px solid #d1d5db;
+          .word-line {
+            font-size: 14px;
+            color: transparent;
+            border-bottom: 1.5px solid #d1d5db;
             padding-bottom: 2px;
+            min-height: 20px;
           }
-          .word-answer.show {
+          .word-line.show {
             color: #374151;
           }
           .footer {
@@ -141,7 +151,7 @@ const createPrintTemplate = (
           <div class="subtitle">${new Date().toLocaleDateString('zh-CN')}</div>
         </div>
         <div class="words-container">
-          ${wordsHTML}
+          ${columnsHTML.join('')}
         </div>
         <div class="footer">
           <span>姓名: ____________</span>
@@ -158,22 +168,23 @@ export const generatePDF = async (
   showAnswers: boolean,
   paperType: 'daily' | 'error' | 'custom' = 'daily'
 ) => {
-  const title = getPaperTitle(paperType);
-  const htmlContent = createPrintTemplate(words, showAnswers, title);
-
-  const tempContainer = document.createElement('div');
-  tempContainer.innerHTML = htmlContent;
-  tempContainer.style.position = 'absolute';
-  tempContainer.style.left = '-9999px';
-  tempContainer.style.top = '0';
-  tempContainer.style.width = `${A4_WIDTH_MM}mm`;
-  tempContainer.style.background = 'white';
-  document.body.appendChild(tempContainer);
-
   try {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    const title = getPaperTitle(paperType);
+    const htmlContent = createPrintTemplate(words, showAnswers, title);
 
-    const canvas = await html2canvas(tempContainer.querySelector('body') as HTMLElement, {
+    const tempContainer = document.createElement('div');
+    tempContainer.innerHTML = htmlContent;
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = `${A4_WIDTH_MM}mm`;
+    tempContainer.style.background = 'white';
+    document.body.appendChild(tempContainer);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const bodyElement = tempContainer.querySelector('body') as HTMLElement;
+    const canvas = await html2canvas(bodyElement, {
       scale: 2,
       useCORS: true,
       logging: false,
@@ -191,8 +202,14 @@ export const generatePDF = async (
 
     pdf.addImage(imgData, 'PNG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
     pdf.save(`${title}-${new Date().toISOString().split('T')[0]}.pdf`);
+  } catch (error) {
+    console.error('PDF生成失败:', error);
+    throw error;
   } finally {
-    document.body.removeChild(tempContainer);
+    const tempContainer = document.querySelector('div[style*="-9999px"]');
+    if (tempContainer) {
+      document.body.removeChild(tempContainer);
+    }
   }
 };
 
@@ -205,15 +222,24 @@ export const printPaper = async (
   const htmlContent = createPrintTemplate(words, showAnswers, title);
 
   const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
+  if (!printWindow) {
+    alert('无法打开打印窗口，请允许弹出窗口');
+    return;
+  }
 
   printWindow.document.write(htmlContent);
   printWindow.document.close();
 
   printWindow.focus();
-  setTimeout(() => {
-    printWindow.print();
-  }, 300);
+  
+  const printHandler = () => {
+    printWindow.removeEventListener('load', printHandler);
+    setTimeout(() => {
+      printWindow.print();
+    }, 200);
+  };
+  
+  printWindow.addEventListener('load', printHandler);
 };
 
 export const getPreviewHTML = (

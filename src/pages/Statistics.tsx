@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { TrendingUp, BookOpen, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
-import { api } from '@/services/api';
 
 const Statistics: React.FC = () => {
   const { settings, vocabulary, statistics, loadVocabulary, loadStatistics } = useStore();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [wordErrorDetails, setWordErrorDetails] = useState<Record<string, any>>({});
 
   useEffect(() => {
     const init = async () => {
@@ -28,28 +26,6 @@ const Statistics: React.FC = () => {
       setStats(statistics);
     }
   }, [statistics]);
-
-  useEffect(() => {
-    const fetchWordErrorDetails = async () => {
-      const errorWords = vocabulary.filter(v => v.errorCount > 0);
-      const details: Record<string, any> = {};
-      
-      for (const word of errorWords.slice(0, 10)) {
-        try {
-          const wordStats = await api.vocabulary.getStats(word.id);
-          details[word.id] = wordStats;
-        } catch (error) {
-          console.error('获取词汇错误详情失败:', error);
-        }
-      }
-      
-      setWordErrorDetails(details);
-    };
-
-    if (!loading && vocabulary.length > 0) {
-      fetchWordErrorDetails();
-    }
-  }, [vocabulary, loading]);
 
   if (loading) {
     return (
@@ -206,34 +182,25 @@ const Statistics: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
               <AlertCircle className="text-orange-500" />
-              易错词汇
+              重点关注
             </h2>
             <div className="space-y-3">
               {vocabulary
                 .filter(v => v.errorCount > 0)
                 .sort((a, b) => b.errorCount - a.errorCount)
                 .slice(0, 5)
-                .map((word) => {
-                  const errorDetails = wordErrorDetails[word.id];
-                  return (
-                    <div key={word.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                      <div>
-                        <div className="font-medium text-gray-800">{word.word}</div>
-                        <div className="text-sm text-gray-500">{word.meaning}</div>
-                        {errorDetails?.errorDates && errorDetails.errorDates.length > 0 && (
-                          <div className="text-xs text-red-500 mt-1">
-                            错误日期: {errorDetails.errorDates.slice(0, 3).join(', ')}
-                            {errorDetails.errorDates.length > 3 && `...等${errorDetails.errorDates.length}天`}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="text-red-600 font-semibold">{word.errorCount} 次错误</div>
-                        <div className="text-xs text-gray-500">{word.correctCount} 次正确</div>
-                      </div>
+                .map((word) => (
+                  <div key={word.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div>
+                      <div className="font-medium text-gray-800">{word.word}</div>
+                      <div className="text-sm text-gray-500">{word.meaning}</div>
                     </div>
-                  );
-                })}
+                    <div className="text-right">
+                      <div className="text-red-600 font-semibold">{word.errorCount} 次错误</div>
+                      <div className="text-xs text-gray-500">{word.correctCount} 次正确</div>
+                    </div>
+                  </div>
+                ))}
               {vocabulary.filter(v => v.errorCount > 0).length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   暂无错题数据
