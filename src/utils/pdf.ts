@@ -87,18 +87,21 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
 
-  const wordsPerColumn = 20;
+  const wordsPerColumn = Math.ceil(words.length / 2);
+  
+  const column1Words = words.slice(0, wordsPerColumn);
+  const column2Words = words.slice(wordsPerColumn);
   
   const generateColumnHTML = (columnWords: Vocabulary[], startIndex: number) => {
     return columnWords.map((word, index) => {
       const actualIndex = startIndex + index;
       return `
-        <div style="margin-bottom: 12px;">
-          <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">
+        <div style="margin-bottom: 8px;">
+          <div style="font-weight: bold; font-size: 13px; margin-bottom: 2px;">
             ${actualIndex + 1}. ${word.meaning}
           </div>
-          <div style="height: 24px; border-bottom: 1px solid #9ca3af; ${
-            showAnswers ? 'color: #6b7280; font-style: italic; font-size: 12px;' : ''
+          <div style="height: 20px; border-bottom: 1px solid #9ca3af; ${
+            showAnswers ? 'color: #6b7280; font-style: italic; font-size: 11px;' : ''
           }">
             ${showAnswers ? word.word : ''}
           </div>
@@ -106,25 +109,6 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
       `;
     }).join('');
   };
-
-  const pages: string[] = [];
-  for (let i = 0; i < words.length; i += wordsPerColumn * 2) {
-    const column1Words = words.slice(i, i + wordsPerColumn);
-    const column2Words = words.slice(i + wordsPerColumn, i + wordsPerColumn * 2);
-    
-    pages.push(`
-      <div class="page">
-        <div class="header">
-          <div class="title">英语默写练习</div>
-          <div class="date">${new Date().toLocaleDateString('zh-CN')}</div>
-        </div>
-        <div class="columns">
-          <div class="column">${generateColumnHTML(column1Words, i)}</div>
-          <div class="column">${generateColumnHTML(column2Words, i + wordsPerColumn)}</div>
-        </div>
-      </div>
-    `);
-  }
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -134,36 +118,36 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
         <style>
           @page {
             size: A4;
-            margin: 15mm;
+            margin: 10mm;
           }
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
           }
-          .page {
-            page-break-after: always;
-            padding: 10px;
-          }
-          .page:last-child {
-            page-break-after: avoid;
+          .content {
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 10mm;
+            box-sizing: border-box;
           }
           .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
           }
           .title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
           }
           .date {
             color: #6b7280;
-            font-size: 12px;
+            font-size: 11px;
           }
           .columns {
             display: flex;
-            gap: 20px;
+            gap: 15px;
           }
           .column {
             flex: 1;
@@ -173,14 +157,23 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            .page {
+            .content {
               padding: 0;
             }
           }
         </style>
       </head>
       <body>
-        ${pages.join('')}
+        <div class="content">
+          <div class="header">
+            <div class="title">英语默写练习</div>
+            <div class="date">${new Date().toLocaleDateString('zh-CN')}</div>
+          </div>
+          <div class="columns">
+            <div class="column">${generateColumnHTML(column1Words, 0)}</div>
+            <div class="column">${generateColumnHTML(column2Words, wordsPerColumn)}</div>
+          </div>
+        </div>
       </body>
     </html>
   `);
