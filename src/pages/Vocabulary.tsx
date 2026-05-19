@@ -158,7 +158,7 @@ const Vocabulary: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const badges = {
       new: { text: '新词', color: 'bg-orange-100 text-orange-700', icon: Clock },
-      reviewed: { text: '已学习', color: 'bg-blue-100 text-blue-700', icon: BookOpen },
+      reviewed: { text: '旧词', color: 'bg-blue-100 text-blue-700', icon: BookOpen },
       mastered: { text: '已掌握', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
       error: { text: '需复习', color: 'bg-red-100 text-red-700', icon: XCircle },
     };
@@ -243,7 +243,7 @@ const Vocabulary: React.FC = () => {
               >
                 <option value="all">全部</option>
                 <option value="new">新词</option>
-                <option value="reviewed">已学习</option>
+                <option value="reviewed">旧词</option>
                 <option value="mastered">已掌握</option>
                 <option value="error">需复习</option>
               </select>
@@ -382,7 +382,7 @@ const Vocabulary: React.FC = () => {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
                     <option value="new">新词</option>
-                    <option value="reviewed">已学习</option>
+                    <option value="reviewed">旧词</option>
                     <option value="mastered">已掌握</option>
                     <option value="error">需复习</option>
                   </select>

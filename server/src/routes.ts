@@ -260,7 +260,7 @@ router.post('/vocabulary/bulk', (req, res) => {
 
     const insert = db.prepare(`
       INSERT INTO vocabulary (id, word, meaning, grade, studentId, status, correctCount, errorCount, addedAt, isCustom)
-      VALUES (?, ?, ?, ?, ?, 'new', 0, 0, ?, 1)
+      VALUES (?, ?, ?, ?, ?, 'reviewed', 0, 0, ?, 1)
     `);
 
     const insertMany = db.transaction((items: any[]) => {
@@ -274,6 +274,7 @@ router.post('/vocabulary/bulk', (req, res) => {
     insertMany(words);
     res.json({ message: '成功导入 ' + count + ' 个词汇' });
   } catch (error) {
+    console.error('批量导入错误:', error);
     res.status(500).json({ error: '批量导入失败' });
   }
 });
