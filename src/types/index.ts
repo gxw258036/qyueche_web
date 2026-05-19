@@ -32,7 +32,7 @@ export interface Vocabulary {
 }
 
 export interface DailyTask {
-  id: string;
+  id: string | null;
   date: string;
   grade: number;
   studentId?: string;
@@ -40,6 +40,7 @@ export interface DailyTask {
   markedErrorWords: string[];
   newWords: Vocabulary[];
   reviewedWords: Vocabulary[];
+  message?: string;
 }
 
 export interface Settings {

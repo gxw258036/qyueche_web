@@ -114,12 +114,20 @@ const Daily: React.FC = () => {
     );
   }
 
-  if (!dailyTask || (allWords.length === 0 && !loading)) {
+  if (!dailyTask || !dailyTask.id) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
-          <p className="text-xl text-gray-600">正在生成今日任务...</p>
+          <div className="text-orange-500 mb-4" style={{ fontSize: '48px' }}>📚</div>
+          <p className="text-xl text-gray-600 mb-4">
+            {dailyTask?.message || '暂无今日任务'}
+          </p>
+          <button
+            onClick={handleRegenerate}
+            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            生成今日任务
+          </button>
         </div>
       </div>
     );
