@@ -269,35 +269,42 @@ router.get('/daily-task', (req, res) => {
     const today = new Date().toISOString().split('T')[0];
 
     const task = db.prepare('SELECT * FROM daily_tasks WHERE date = ? AND grade = ? AND (studentId = ? OR studentId IS NULL)')
-      .get(today, Number(grade), studentId || null);
+      .get(today, Number(grade), studentId || null) as any;
 
     if (task) {
-      const vocabIds = (task as any).markedErrorWords
-        ? JSON.parse((task as any).markedErrorWords)
-        : [];
+      let newWords: Vocabulary[] = [];
+      let reviewedWords: Vocabulary[] = [];
+      let markedErrorWords: string[] = [];
 
-      const newWords = db.prepare(`
-        SELECT * FROM vocabulary WHERE id IN (
-          SELECT id FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status = 'new' LIMIT 10
-        )
-      `).all(Number(grade), studentId || null);
-
-      const reviewedWords = db.prepare(`
-        SELECT * FROM vocabulary WHERE id IN (
-          SELECT id FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL) AND status IN ('reviewed', 'mastered', 'error') LIMIT 20
-        )
-      `).all(Number(grade), studentId || null);
+      try {
+        if (task.newWords) {
+          newWords = JSON.parse(task.newWords);
+        }
+        if (task.reviewedWords) {
+          reviewedWords = JSON.parse(task.reviewedWords);
+        }
+        if (task.markedErrorWords) {
+          markedErrorWords = JSON.parse(task.markedErrorWords);
+        }
+      } catch (e) {
+        console.error('解析单词数据失败:', e);
+      }
 
       res.json({
-        ...task,
+        id: task.id,
+        date: task.date,
+        grade: task.grade,
+        studentId: task.studentId,
+        completed: task.completed === 1,
         newWords,
         reviewedWords,
-        markedErrorWords: vocabIds
+        markedErrorWords
       });
     } else {
       res.json(null);
     }
   } catch (error) {
+    console.error('获取任务失败:', error);
     res.status(500).json({ error: '获取任务失败' });
   }
 });
@@ -445,6 +452,55 @@ router.post('/daily-task/complete', (req, res) => {
     res.json({ message: '任务完成' });
   } catch (error) {
     res.status(500).json({ error: '完成任务失败' });
+  }
+});
+
+router.get('/daily-task/history', (req, res) => {
+  try {
+    const grade = req.query.grade as string;
+    const studentId = req.query.studentId as string;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 30;
+
+    const tasks = db.prepare(`
+      SELECT * FROM daily_tasks 
+      WHERE grade = ? 
+      AND (studentId = ? OR studentId IS NULL)
+      AND completed = 1
+      ORDER BY date DESC
+      LIMIT ?
+    `).all(Number(grade), studentId || null, limit) as any[];
+
+    const history = tasks.map(task => {
+      let totalCount = 0;
+      let correctCount = 0;
+      let errorCount = 0;
+      
+      try {
+        const newWords = task.newWords ? JSON.parse(task.newWords) : [];
+        const reviewedWords = task.reviewedWords ? JSON.parse(task.reviewedWords) : [];
+        totalCount = newWords.length + reviewedWords.length;
+        
+        const markedErrorWords = task.markedErrorWords ? JSON.parse(task.markedErrorWords) : [];
+        errorCount = markedErrorWords.length;
+        correctCount = totalCount - errorCount;
+      } catch (e) {
+        // 如果解析失败，使用默认值
+      }
+
+      return {
+        id: task.id,
+        date: task.date,
+        grade: task.grade,
+        totalCount,
+        correctCount,
+        errorCount
+      };
+    });
+
+    res.json(history);
+  } catch (error) {
+    console.error('获取历史记录失败:', error);
+    res.status(500).json({ error: '获取历史记录失败' });
   }
 });
 

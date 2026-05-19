@@ -1,4 +1,4 @@
-import { Vocabulary, DailyTask, Settings, Statistics, Student } from '@/types';
+import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory } from '@/types';
 
 const API_BASE = '/api';
 
@@ -88,7 +88,14 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId, errorWordIds, studentId })
-      }).then(res => res.json())
+      }).then(res => res.json()),
+    getHistory: (grade: number, studentId?: string, limit?: number) => {
+      const query = new URLSearchParams();
+      query.set('grade', grade.toString());
+      if (studentId) query.set('studentId', studentId);
+      if (limit) query.set('limit', limit.toString());
+      return fetch(`${API_BASE}/daily-task/history?${query}`).then(res => res.json()) as Promise<DailyTaskHistory[]>;
+    }
   },
 
   statistics: {
