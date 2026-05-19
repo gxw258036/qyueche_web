@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { X, Calendar, CheckCircle2, XCircle } from 'lucide-react';
-import { DailyTaskHistory } from '@/types';
+import { X, Calendar, CheckCircle2, XCircle, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import { DailyTaskHistory, Vocabulary } from '@/types';
 
 interface HistoryModalProps {
   onClose: () => void;
@@ -11,6 +11,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
   const { loadDailyTaskHistory } = useStore();
   const [history, setHistory] = useState<DailyTaskHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -30,6 +31,18 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
       day: 'numeric',
       weekday: 'long'
     });
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
+  const getAllWords = (task: DailyTaskHistory): Vocabulary[] => {
+    return [...task.newWords, ...task.reviewedWords];
+  };
+
+  const isErrorWord = (wordId: string, task: DailyTaskHistory): boolean => {
+    return task.markedErrorWords.includes(wordId);
   };
 
   return (
@@ -60,44 +73,95 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
               {history.map((task) => (
                 <div
                   key={task.id}
-                  className="bg-gray-50 rounded-xl p-4 border border-gray-200"
+                  className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden"
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Calendar size={18} />
-                      <span className="font-medium">{formatDate(task.date)}</span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {task.grade}年级
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-white rounded-lg p-3 text-center border">
-                      <div className="text-2xl font-bold text-gray-800">{task.totalCount}</div>
-                      <div className="text-sm text-gray-500">总词汇</div>
-                    </div>
-                    <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
-                      <div className="text-2xl font-bold text-green-600 flex items-center justify-center gap-1">
-                        <CheckCircle2 size={20} />
-                        {task.correctCount}
+                  <div
+                    className="p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => toggleExpand(task.id)}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Calendar size={18} />
+                        <span className="font-medium">{formatDate(task.date)}</span>
                       </div>
-                      <div className="text-sm text-green-600">正确</div>
-                    </div>
-                    <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
-                      <div className="text-2xl font-bold text-red-600 flex items-center justify-center gap-1">
-                        <XCircle size={20} />
-                        {task.errorCount}
+                      <div className="flex items-center gap-4">
+                        <div className="text-sm text-gray-500">
+                          {task.grade}年级
+                        </div>
+                        <button className="p-1 hover:bg-gray-200 rounded">
+                          {expandedId === task.id ? (
+                            <ChevronUp size={20} />
+                          ) : (
+                            <ChevronDown size={20} />
+                          )}
+                        </button>
                       </div>
-                      <div className="text-sm text-red-600">错误</div>
                     </div>
+                    
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="bg-white rounded-lg p-3 text-center border">
+                        <div className="text-2xl font-bold text-gray-800">{task.totalCount}</div>
+                        <div className="text-sm text-gray-500">总词汇</div>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
+                        <div className="text-2xl font-bold text-green-600 flex items-center justify-center gap-1">
+                          <CheckCircle2 size={20} />
+                          {task.correctCount}
+                        </div>
+                        <div className="text-sm text-green-600">正确</div>
+                      </div>
+                      <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
+                        <div className="text-2xl font-bold text-red-600 flex items-center justify-center gap-1">
+                          <XCircle size={20} />
+                          {task.errorCount}
+                        </div>
+                        <div className="text-sm text-red-600">错误</div>
+                      </div>
+                      <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {task.totalCount > 0 ? Math.round((task.correctCount / task.totalCount) * 100) : 0}%
+                        </div>
+                        <div className="text-sm text-blue-600">正确率</div>
+                      </div>
+                    </div>
+
+                    {getAllWords(task).length > 0 && (
+                      <div className="mt-3 text-center text-sm text-gray-500 flex items-center justify-center gap-2">
+                        <BookOpen size={16} />
+                        点击查看 {getAllWords(task).length} 个默写单词
+                      </div>
+                    )}
                   </div>
 
-                  <div className="mt-3 text-center">
-                    <div className="inline-block px-4 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
-                      正确率: {task.totalCount > 0 ? Math.round((task.correctCount / task.totalCount) * 100) : 0}%
+                  {expandedId === task.id && getAllWords(task).length > 0 && (
+                    <div className="px-4 pb-4 border-t border-gray-200">
+                      <div className="pt-4">
+                        <h4 className="font-medium text-gray-700 mb-3">默写单词列表</h4>
+                        <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                          {getAllWords(task).map((word) => (
+                            <div
+                              key={word.id}
+                              className={`flex items-center justify-between p-2 rounded-lg ${
+                                isErrorWord(word.id, task)
+                                  ? 'bg-red-50 border border-red-200'
+                                  : 'bg-green-50 border border-green-200'
+                              }`}
+                            >
+                              <div>
+                                <div className="font-medium text-gray-800">{word.word}</div>
+                                <div className="text-sm text-gray-500">{word.meaning}</div>
+                              </div>
+                              {isErrorWord(word.id, task) ? (
+                                <XCircle className="text-red-500" size={18} />
+                              ) : (
+                                <CheckCircle2 className="text-green-500" size={18} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -440,6 +440,29 @@ router.post('/daily-task/complete', (req, res) => {
   try {
     const { taskId, errorWordIds, studentId } = req.body;
     const today = new Date().toISOString().split('T')[0];
+    const errorIdsSet = new Set(errorWordIds || []);
+
+    const task = db.prepare('SELECT * FROM daily_tasks WHERE id = ?').get(taskId) as any;
+    if (!task) {
+      res.status(404).json({ error: '任务不存在' });
+      return;
+    }
+
+    let allWordIds: string[] = [];
+    try {
+      if (task.newWords) {
+        const newWords = JSON.parse(task.newWords);
+        allWordIds = allWordIds.concat(newWords.map((w: any) => w.id));
+      }
+      if (task.reviewedWords) {
+        const reviewedWords = JSON.parse(task.reviewedWords);
+        allWordIds = allWordIds.concat(reviewedWords.map((w: any) => w.id));
+      }
+    } catch (e) {
+      console.error('解析单词数据失败:', e);
+    }
+
+    const correctWordIds = allWordIds.filter(id => !errorIdsSet.has(id));
 
     db.prepare(`
       UPDATE daily_tasks
@@ -447,11 +470,15 @@ router.post('/daily-task/complete', (req, res) => {
       WHERE id = ?
     `).run(JSON.stringify(errorWordIds), taskId);
 
-    const updateVocab = db.prepare(`
-      UPDATE vocabulary
-      SET status = ?, errorCount = errorCount + 1, lastReviewedAt = ?, updatedAt = ?
-      WHERE id = ?
-    `);
+    const updateError = db.transaction((ids: string[]) => {
+      for (const id of ids) {
+        db.prepare(`
+          UPDATE vocabulary
+          SET status = 'error', errorCount = errorCount + 1, correctCount = 0, lastReviewedAt = ?, updatedAt = ?
+          WHERE id = ?
+        `).run(today, today, id);
+      }
+    });
 
     const updateCorrect = db.transaction((ids: string[]) => {
       for (const id of ids) {
@@ -481,7 +508,11 @@ router.post('/daily-task/complete', (req, res) => {
     });
 
     if (errorWordIds && errorWordIds.length > 0) {
-      updateCorrect(errorWordIds);
+      updateError(errorWordIds);
+    }
+
+    if (correctWordIds.length > 0) {
+      updateCorrect(correctWordIds);
     }
 
     const updateFields: string[] = ['lastStudyDate = ?'];
@@ -522,13 +553,16 @@ router.get('/daily-task/history', (req, res) => {
       let totalCount = 0;
       let correctCount = 0;
       let errorCount = 0;
+      let newWords: any[] = [];
+      let reviewedWords: any[] = [];
+      let markedErrorWords: string[] = [];
       
       try {
-        const newWords = task.newWords ? JSON.parse(task.newWords) : [];
-        const reviewedWords = task.reviewedWords ? JSON.parse(task.reviewedWords) : [];
+        newWords = task.newWords ? JSON.parse(task.newWords) : [];
+        reviewedWords = task.reviewedWords ? JSON.parse(task.reviewedWords) : [];
         totalCount = newWords.length + reviewedWords.length;
         
-        const markedErrorWords = task.markedErrorWords ? JSON.parse(task.markedErrorWords) : [];
+        markedErrorWords = task.markedErrorWords ? JSON.parse(task.markedErrorWords) : [];
         errorCount = markedErrorWords.length;
         correctCount = totalCount - errorCount;
       } catch (e) {
@@ -541,7 +575,10 @@ router.get('/daily-task/history', (req, res) => {
         grade: task.grade,
         totalCount,
         correctCount,
-        errorCount
+        errorCount,
+        newWords,
+        reviewedWords,
+        markedErrorWords
       };
     });
 

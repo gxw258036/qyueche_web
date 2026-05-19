@@ -5,6 +5,9 @@ export interface DailyTaskHistory {
   totalCount: number;
   correctCount: number;
   errorCount: number;
+  newWords: Vocabulary[];
+  reviewedWords: Vocabulary[];
+  markedErrorWords: string[];
 }
 
 export interface Student {
