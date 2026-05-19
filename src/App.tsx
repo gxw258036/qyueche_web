@@ -32,7 +32,7 @@ function App() {
         </div>
       )}
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-4">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/daily" element={<Daily />} />
