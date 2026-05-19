@@ -2,123 +2,225 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Vocabulary } from '@/types';
 
-export const generatePDF = async (words: Vocabulary[], showAnswers: boolean) => {
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
 
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 20;
-  const lineHeight = 12;
-  let yPosition = margin + 20;
-
-  // Title
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.text('英语默写练习', pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 15;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(12);
-  doc.text(new Date().toLocaleDateString('zh-CN'), pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 20;
-
-  // Words
-  doc.setFontSize(14);
-  words.forEach((word, index) => {
-    if (yPosition > pageHeight - margin - 20) {
-      doc.addPage();
-      yPosition = margin + 20;
-    }
-
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${index + 1}. ${word.meaning}`, margin, yPosition);
-    yPosition += 8;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    
-    if (showAnswers) {
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(100, 100, 100);
-      doc.text(word.word, margin, yPosition - 2);
-      doc.setTextColor(0, 0, 0);
-    }
-    
-    yPosition += lineHeight + 5;
-  });
-
-  doc.save('english-vocabulary-practice.pdf');
+const getPaperTitle = (paperType: 'daily' | 'error' | 'custom') => {
+  const titles = {
+    daily: '今日默写任务',
+    error: '错题专项练习',
+    custom: '自定义默写练习',
+  };
+  return titles[paperType];
 };
 
-export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
-
+const createPrintTemplate = (
+  words: Vocabulary[],
+  showAnswers: boolean,
+  title: string
+): string => {
   const wordsHTML = words
     .map(
       (word, index) => `
-      <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
-        <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">
-          ${index + 1}. ${word.meaning}
-        </div>
-        <div style="height: 30px; border-bottom: 2px solid #9ca3af; ${
-          showAnswers ? 'color: #6b7280; font-style: italic;' : ''
-        }">
-          ${showAnswers ? word.word : ''}
+      <div class="word-item">
+        <div class="word-number">${index + 1}.</div>
+        <div class="word-content">
+          <div class="word-meaning">${word.meaning}</div>
+          <div class="word-answer ${showAnswers ? 'show' : ''}">${
+        showAnswers ? word.word : ''
+      }</div>
         </div>
       </div>
     `
     )
     .join('');
 
-  printWindow.document.write(`
+  return `
     <!DOCTYPE html>
     <html>
       <head>
-        <title>英语默写练习</title>
+        <meta charset="UTF-8">
+        <title>${title}</title>
         <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          @page {
+            size: A4;
+            margin: 15mm;
+          }
           body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            width: ${A4_WIDTH_MM}mm;
+            min-height: ${A4_HEIGHT_MM}mm;
+            padding: 15mm;
+            color: #1f2937;
+            background: white;
           }
           .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
           }
           .title {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
           }
-          .date {
+          .subtitle {
+            font-size: 14px;
             color: #6b7280;
           }
+          .words-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          }
+          .word-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 10px 0;
+            border-bottom: 1px dashed #e5e7eb;
+            min-height: 36px;
+          }
+          .word-number {
+            width: 30px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #6b7280;
+            flex-shrink: 0;
+          }
+          .word-content {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+          }
+          .word-meaning {
+            font-size: 16px;
+            font-weight: 500;
+            flex: 1;
+          }
+          .word-answer {
+            font-size: 16px;
+            color: #9ca3af;
+            min-width: 150px;
+            text-align: right;
+            border-bottom: 2px solid #d1d5db;
+            padding-bottom: 2px;
+          }
+          .word-answer.show {
+            color: #374151;
+          }
+          .footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #9ca3af;
+          }
           @media print {
-            body { padding: 20px; }
+            body {
+              padding: 15mm;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
           }
         </style>
       </head>
       <body>
         <div class="header">
-          <div class="title">英语默写练习</div>
-          <div class="date">${new Date().toLocaleDateString('zh-CN')}</div>
+          <div class="title">${title}</div>
+          <div class="subtitle">${new Date().toLocaleDateString('zh-CN')}</div>
         </div>
-        ${wordsHTML}
+        <div class="words-container">
+          ${wordsHTML}
+        </div>
+        <div class="footer">
+          <span>姓名: ____________</span>
+          <span>得分: ____________</span>
+          <span>共 ${words.length} 题</span>
+        </div>
       </body>
     </html>
-  `);
+  `;
+};
 
+export const generatePDF = async (
+  words: Vocabulary[],
+  showAnswers: boolean,
+  paperType: 'daily' | 'error' | 'custom' = 'daily'
+) => {
+  const title = getPaperTitle(paperType);
+  const htmlContent = createPrintTemplate(words, showAnswers, title);
+
+  const tempContainer = document.createElement('div');
+  tempContainer.innerHTML = htmlContent;
+  tempContainer.style.position = 'absolute';
+  tempContainer.style.left = '-9999px';
+  tempContainer.style.top = '0';
+  tempContainer.style.width = `${A4_WIDTH_MM}mm`;
+  tempContainer.style.background = 'white';
+  document.body.appendChild(tempContainer);
+
+  try {
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const canvas = await html2canvas(tempContainer.querySelector('body') as HTMLElement, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      width: A4_WIDTH_MM * 3.78,
+      height: A4_HEIGHT_MM * 3.78,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
+    pdf.save(`${title}-${new Date().toISOString().split('T')[0]}.pdf`);
+  } finally {
+    document.body.removeChild(tempContainer);
+  }
+};
+
+export const printPaper = async (
+  words: Vocabulary[],
+  showAnswers: boolean,
+  paperType: 'daily' | 'error' | 'custom' = 'daily'
+) => {
+  const title = getPaperTitle(paperType);
+  const htmlContent = createPrintTemplate(words, showAnswers, title);
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  printWindow.document.write(htmlContent);
   printWindow.document.close();
+
   printWindow.focus();
-  
   setTimeout(() => {
     printWindow.print();
-  }, 250);
+  }, 300);
+};
+
+export const getPreviewHTML = (
+  words: Vocabulary[],
+  showAnswers: boolean,
+  paperType: 'daily' | 'error' | 'custom' = 'daily'
+) => {
+  const title = getPaperTitle(paperType);
+  return createPrintTemplate(words, showAnswers, title);
 };
