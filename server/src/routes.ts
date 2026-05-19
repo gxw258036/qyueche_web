@@ -2,6 +2,22 @@ import { Router } from 'express';
 import db from './database';
 import { initializeVocabulary } from './initData';
 
+interface Vocabulary {
+  id: string;
+  word: string;
+  meaning: string;
+  grade: number;
+  studentId?: string;
+  status: 'new' | 'reviewed' | 'mastered' | 'error';
+  correctCount: number;
+  errorCount: number;
+  addedAt: string;
+  lastReviewedAt?: string;
+  isCustom: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 const router = Router();
 
 router.get('/init', (req, res) => {
