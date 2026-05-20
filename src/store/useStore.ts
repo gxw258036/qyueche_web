@@ -15,7 +15,7 @@ interface Store {
 
   loadStudents: () => Promise<void>;
   addStudent: (name: string, grade: number) => Promise<void>;
-  updateStudent: (id: string, name: string, grade: number) => Promise<void>;
+  updateStudent: (id: string, name: string, grade: number, dailyTaskCount?: number) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
   setCurrentStudent: (student: Student | null) => void;
 
