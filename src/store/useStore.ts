@@ -26,10 +26,10 @@ interface Store {
   bulkDeleteVocabulary: (ids: string[]) => Promise<void>;
   bulkAddVocabulary: (words: { word: string; meaning: string; type?: string }[], studentId?: string) => Promise<void>;
 
-  loadDailyTask: () => Promise<void>;
+  loadDailyTask: () => Promise<DailyTask | null>;
   generateDailyTask: () => Promise<void>;
   completeDailyTask: (errorWordIds: string[]) => Promise<void>;
-  loadDailyTaskHistory: (limit?: number) => Promise<void>;
+  loadDailyTaskHistory: (limit?: number) => Promise<DailyTaskHistory[]>;
 
   loadSettings: () => Promise<void>;
   updateSettings: (currentStudentId?: string, dailyTaskCount?: number) => Promise<void>;
@@ -185,9 +185,12 @@ export const useStore = create<Store>((set, get) => ({
       if (currentStudent) {
         const task = await api.dailyTask.get(currentStudent.id);
         set({ dailyTask: task });
+        return task;
       }
+      return null;
     } catch (error) {
       console.error('加载每日任务失败:', error);
+      return null;
     }
   },
 
@@ -223,9 +226,12 @@ export const useStore = create<Store>((set, get) => ({
       if (currentStudent) {
         const history = await api.dailyTask.getHistory(currentStudent.id, limit);
         set({ dailyTaskHistory: history });
+        return history;
       }
+      return [];
     } catch (error) {
       set({ error: '获取历史记录失败' });
+      return [];
     }
   },
 
