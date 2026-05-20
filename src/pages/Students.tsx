@@ -9,7 +9,7 @@ const Students: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [formData, setFormData] = useState({ name: '', grade: 2 });
+  const [formData, setFormData] = useState({ name: '', grade: 2, dailyTaskCount: 30 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,8 +22,8 @@ const Students: React.FC = () => {
 
   const handleAdd = async () => {
     if (formData.name.trim()) {
-      await addStudent(formData.name, formData.grade);
-      setFormData({ name: '', grade: 2 });
+      await api.students.create({ name: formData.name, grade: formData.grade, dailyTaskCount: formData.dailyTaskCount });
+      setFormData({ name: '', grade: 2, dailyTaskCount: 30 });
       setShowAddModal(false);
       await loadStudents();
     }
@@ -31,15 +31,15 @@ const Students: React.FC = () => {
 
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
-    setFormData({ name: student.name, grade: student.grade });
+    setFormData({ name: student.name, grade: student.grade, dailyTaskCount: student.dailyTaskCount || 30 });
     setShowEditModal(true);
   };
 
   const handleUpdate = async () => {
     if (editingStudent && formData.name.trim()) {
-      await updateStudent(editingStudent.id, formData.name, formData.grade);
+      await api.students.update(editingStudent.id, { name: formData.name, grade: formData.grade, dailyTaskCount: formData.dailyTaskCount });
       setEditingStudent(null);
-      setFormData({ name: '', grade: 2 });
+      setFormData({ name: '', grade: 2, dailyTaskCount: 30 });
       setShowEditModal(false);
       await loadStudents();
       window.location.reload();
@@ -106,13 +106,18 @@ const Students: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <div className="font-medium text-gray-800 text-sm">{student.name}</div>
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                    student.grade === 2 || student.grade === 3 || student.grade === 4
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-purple-100 text-purple-700'
-                  }`}>
-                    {student.grade}年级
-                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                      student.grade === 2 || student.grade === 3 || student.grade === 4
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-purple-100 text-purple-700'
+                    }`}>
+                      {student.grade}年级
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {student.dailyTaskCount || 30}词/天
+                    </span>
+                  </div>
                 </div>
                 {currentStudent?.id === student.id && (
                   <span className="flex items-center gap-1 text-green-600 text-xs">
@@ -161,6 +166,7 @@ const Students: React.FC = () => {
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">姓名</th>
                   <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">年级</th>
+                  <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">每日任务</th>
                   <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">当前状态</th>
                   <th className="text-right py-2.5 px-3 text-gray-600 font-medium text-sm">操作</th>
                 </tr>
@@ -184,6 +190,9 @@ const Students: React.FC = () => {
                       }`}>
                         {student.grade}年级
                       </span>
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="text-sm text-gray-700">{student.dailyTaskCount || 30}词/天</span>
                     </td>
                     <td className="py-3 px-3">
                       {currentStudent?.id === student.id ? (
@@ -299,6 +308,28 @@ const Students: React.FC = () => {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  每日任务数量: <span className="text-orange-500 font-bold">{formData.dailyTaskCount}</span>词
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="50"
+                  step="5"
+                  value={formData.dailyTaskCount}
+                  onChange={(e) => setFormData({ ...formData, dailyTaskCount: parseInt(e.target.value) })}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500 mt-2"
+                />
+                <div className="flex justify-between mt-1 text-xs text-gray-500">
+                  <span>10词</span>
+                  <span>20词</span>
+                  <span>30词</span>
+                  <span>40词</span>
+                  <span>50词</span>
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -364,6 +395,28 @@ const Students: React.FC = () => {
                   <option value="5">五年级</option>
                   <option value="6">六年级</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  每日任务数量: <span className="text-orange-500 font-bold">{formData.dailyTaskCount}</span>词
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="50"
+                  step="5"
+                  value={formData.dailyTaskCount}
+                  onChange={(e) => setFormData({ ...formData, dailyTaskCount: parseInt(e.target.value) })}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500 mt-2"
+                />
+                <div className="flex justify-between mt-1 text-xs text-gray-500">
+                  <span>10词</span>
+                  <span>20词</span>
+                  <span>30词</span>
+                  <span>40词</span>
+                  <span>50词</span>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">

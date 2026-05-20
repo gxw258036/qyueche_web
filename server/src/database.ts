@@ -12,6 +12,7 @@ db.exec(`
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     grade INTEGER NOT NULL CHECK(grade >= 2 AND grade <= 6),
+    dailyTaskCount INTEGER DEFAULT 30,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(name, grade)
@@ -57,6 +58,7 @@ db.exec(`
     currentGrade INTEGER DEFAULT 4,
     currentStudentId TEXT,
     lastStudyDate TEXT,
+    dailyTaskCount INTEGER DEFAULT 30,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (currentStudentId) REFERENCES students(id) ON DELETE SET NULL
@@ -105,10 +107,24 @@ try {
   // 列已存在，忽略
 }
 
+// 为 students 表添加缺失的字段
+try {
+  db.prepare('ALTER TABLE students ADD COLUMN dailyTaskCount INTEGER DEFAULT 30').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+
+// 为 settings 表添加缺失的字段
+try {
+  db.prepare('ALTER TABLE settings ADD COLUMN dailyTaskCount INTEGER DEFAULT 30').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+
 const initSettings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
 if (!initSettings) {
   const today = new Date().toISOString().split('T')[0];
-  db.prepare('INSERT INTO settings (id, currentGrade, lastStudyDate) VALUES (1, 4, ?)').run(today);
+  db.prepare('INSERT INTO settings (id, currentGrade, lastStudyDate, dailyTaskCount) VALUES (1, 4, ?, 30)').run(today);
 }
 
 export default db;

@@ -32,7 +32,7 @@ interface Store {
   loadDailyTaskHistory: (limit?: number) => Promise<DailyTaskHistory[]>;
 
   loadSettings: () => Promise<void>;
-  updateSettings: (currentGrade?: number, currentStudentId?: string) => Promise<void>;
+  updateSettings: (currentGrade?: number, currentStudentId?: string, dailyTaskCount?: number) => Promise<void>;
 
   loadStatistics: () => Promise<void>;
 
@@ -70,13 +70,13 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
-  updateStudent: async (id, name, grade) => {
+  updateStudent: async (id, name, grade, dailyTaskCount) => {
     try {
-      await api.students.update(id, { name, grade });
+      await api.students.update(id, { name, grade, dailyTaskCount });
       await get().loadStudents();
       const current = get().currentStudent;
       if (current && current.id === id) {
-        set({ currentStudent: { ...current, name, grade } });
+        set({ currentStudent: { ...current, name, grade, dailyTaskCount } });
         await api.settings.update({ currentGrade: grade });
         await get().loadSettings();
       }
@@ -227,9 +227,9 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
-  updateSettings: async (currentGrade, currentStudentId) => {
+  updateSettings: async (currentGrade, currentStudentId, dailyTaskCount) => {
     try {
-      await api.settings.update({ currentGrade, currentStudentId });
+      await api.settings.update({ currentGrade, currentStudentId, dailyTaskCount });
       await get().loadSettings();
     } catch (error) {
       set({ error: '更新设置失败' });

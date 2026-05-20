@@ -36,16 +36,16 @@ router.get('/students', (req, res) => {
 
 router.post('/students', (req, res) => {
   try {
-    const { name, grade } = req.body;
+    const { name, grade, dailyTaskCount } = req.body;
     const today = new Date().toISOString().split('T')[0];
     const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     db.prepare(`
-      INSERT INTO students (id, name, grade, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, name, grade, today, today);
+      INSERT INTO students (id, name, grade, dailyTaskCount, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, name, grade, dailyTaskCount || 30, today, today);
 
-    res.json({ id, name, grade, message: '学生添加成功' });
+    res.json({ id, name, grade, dailyTaskCount: dailyTaskCount || 30, message: '学生添加成功' });
   } catch (error: any) {
     if (error.message && error.message.includes('UNIQUE constraint failed')) {
       res.status(400).json({ error: '该学生已存在' });
@@ -58,12 +58,31 @@ router.post('/students', (req, res) => {
 router.put('/students/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { name, grade } = req.body;
+    const { name, grade, dailyTaskCount } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
-    db.prepare(`
-      UPDATE students SET name = ?, grade = ?, updatedAt = ? WHERE id = ?
-    `).run(name, grade, today, id);
+    const updateFields: string[] = [];
+    const params: any[] = [];
+
+    if (name !== undefined) {
+      updateFields.push('name = ?');
+      params.push(name);
+    }
+    if (grade !== undefined) {
+      updateFields.push('grade = ?');
+      params.push(grade);
+    }
+    if (dailyTaskCount !== undefined) {
+      updateFields.push('dailyTaskCount = ?');
+      params.push(dailyTaskCount);
+    }
+    updateFields.push('updatedAt = ?');
+    params.push(today);
+    params.push(id);
+
+    if (updateFields.length > 0) {
+      db.prepare(`UPDATE students SET ${updateFields.join(', ')} WHERE id = ?`).run(...params);
+    }
 
     res.json({ message: '学生信息更新成功' });
   } catch (error) {
@@ -92,7 +111,7 @@ router.get('/settings', (req, res) => {
 
 router.put('/settings', (req, res) => {
   try {
-    const { currentGrade, currentStudentId } = req.body;
+    const { currentGrade, currentStudentId, dailyTaskCount } = req.body;
     const today = new Date().toISOString().split('T')[0];
     
     const updateFields: string[] = [];
@@ -105,6 +124,10 @@ router.put('/settings', (req, res) => {
     if (currentStudentId !== undefined) {
       updateFields.push('currentStudentId = ?');
       params.push(currentStudentId);
+    }
+    if (dailyTaskCount !== undefined) {
+      updateFields.push('dailyTaskCount = ?');
+      params.push(dailyTaskCount);
     }
     updateFields.push('updatedAt = ?');
     params.push(today);
@@ -122,7 +145,7 @@ router.put('/settings', (req, res) => {
 
 router.post('/settings', (req, res) => {
   try {
-    const { currentGrade, currentStudentId } = req.body;
+    const { currentGrade, currentStudentId, dailyTaskCount } = req.body;
     const today = new Date().toISOString().split('T')[0];
     
     const updateFields: string[] = [];
@@ -135,6 +158,10 @@ router.post('/settings', (req, res) => {
     if (currentStudentId !== undefined) {
       updateFields.push('currentStudentId = ?');
       params.push(currentStudentId);
+    }
+    if (dailyTaskCount !== undefined) {
+      updateFields.push('dailyTaskCount = ?');
+      params.push(dailyTaskCount);
     }
     updateFields.push('updatedAt = ?');
     params.push(today);
@@ -331,7 +358,23 @@ router.post('/daily-task/generate', (req, res) => {
     const { grade, studentId } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
-    const TARGET_COUNT = 30;
+    let TARGET_COUNT = 30;
+    
+    // 先尝试从学生表获取配置
+    if (studentId) {
+      const student = db.prepare('SELECT dailyTaskCount FROM students WHERE id = ?').get(studentId) as any;
+      if (student && student.dailyTaskCount) {
+        TARGET_COUNT = student.dailyTaskCount;
+      }
+    }
+    
+    // 如果学生没有配置，从设置表获取
+    if (TARGET_COUNT === 30) {
+      const settings = db.prepare('SELECT dailyTaskCount FROM settings WHERE id = 1').get() as any;
+      if (settings && settings.dailyTaskCount) {
+        TARGET_COUNT = settings.dailyTaskCount;
+      }
+    }
 
     const allVocabulary = db.prepare(`
       SELECT * FROM vocabulary

@@ -14,6 +14,7 @@ export interface Student {
   id: string;
   name: string;
   grade: number;
+  dailyTaskCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -52,6 +53,7 @@ export interface Settings {
   currentGrade: number;
   currentStudentId?: string;
   lastStudyDate?: string;
+  dailyTaskCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }

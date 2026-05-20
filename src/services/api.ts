@@ -7,13 +7,13 @@ export const api = {
 
   students: {
     getAll: () => fetch(`${API_BASE}/students`).then(res => res.json()) as Promise<Student[]>,
-    create: (data: { name: string; grade: number }) => 
+    create: (data: { name: string; grade: number; dailyTaskCount?: number }) => 
       fetch(`${API_BASE}/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       }).then(res => res.json()),
-    update: (id: string, data: { name: string; grade: number }) =>
+    update: (id: string, data: { name?: string; grade?: number; dailyTaskCount?: number }) =>
       fetch(`${API_BASE}/students/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -25,7 +25,7 @@ export const api = {
 
   settings: {
     get: () => fetch(`${API_BASE}/settings`).then(res => res.json()) as Promise<Settings>,
-    update: (data: { currentGrade?: number; currentStudentId?: string }) =>
+    update: (data: { currentGrade?: number; currentStudentId?: string; dailyTaskCount?: number }) =>
       fetch(`${API_BASE}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

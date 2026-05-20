@@ -61,7 +61,7 @@ const Navbar: React.FC = () => {
               <BookOpen className="text-orange-500" size={24} />
               <div className="flex flex-col">
                 <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent">
-                  宝宝英语
+                  Daily English
                 </span>
                 {currentStudent && (
                   <span className="text-xs text-gray-500 flex items-center gap-1">

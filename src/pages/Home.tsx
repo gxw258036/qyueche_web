@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
-import { Calendar, Book, CheckCircle, AlertCircle } from 'lucide-react';
-import { GRADE_CONFIGS } from '@/types';
+import { Calendar, Book, CheckCircle, AlertCircle, Settings2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const Home = () => {
   const navigate = useNavigate();
   const { settings, vocabulary, updateSettings, dailyTask, statistics, loadVocabulary } = useStore();
   const [stats, setStats] = useState<any>(null);
+  const [dailyTaskCount, setDailyTaskCount] = useState<number>(settings.dailyTaskCount || 30);
 
   useEffect(() => {
     loadVocabulary();
@@ -20,8 +20,17 @@ const Home = () => {
     }
   }, [statistics]);
 
+  useEffect(() => {
+    setDailyTaskCount(settings.dailyTaskCount || 30);
+  }, [settings.dailyTaskCount]);
+
   const handleGradeChange = async (grade: number) => {
     await updateSettings(grade);
+  };
+
+  const handleDailyTaskCountChange = async (count: number) => {
+    setDailyTaskCount(count);
+    await updateSettings(undefined, undefined, count);
   };
 
   const handleGenerateToday = async () => {
@@ -34,7 +43,7 @@ const Home = () => {
         {/* Header */}
         <div className="text-center mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-2 sm:mb-3">
-            👋 欢迎使用宝宝英语
+            👋 欢迎使用 Daily English
           </h1>
           <p className="text-gray-600 text-sm sm:text-base">
             每日坚持，词汇量天天涨！
@@ -56,11 +65,40 @@ const Home = () => {
                 }`}
               >
                 <div className="text-lg sm:text-xl font-bold">{grade}年级</div>
-                <div className="text-xs opacity-90 mt-1">
-                  {GRADE_CONFIGS[grade].newCount}+{GRADE_CONFIGS[grade].reviewCount}词
-                </div>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Daily Task Count Configuration */}
+        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
+          <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
+            <Settings2 size={20} />
+            每日任务数量设置
+          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex-1">
+              <input
+                type="range"
+                min="10"
+                max="50"
+                step="5"
+                value={dailyTaskCount}
+                onChange={(e) => handleDailyTaskCountChange(parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              />
+            </div>
+            <div className="text-center sm:text-left">
+              <span className="text-2xl font-bold text-orange-500">{dailyTaskCount}</span>
+              <span className="text-gray-600 ml-1">词</span>
+            </div>
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-gray-500">
+            <span>10词</span>
+            <span>20词</span>
+            <span>30词</span>
+            <span>40词</span>
+            <span>50词</span>
           </div>
         </div>
 
@@ -75,15 +113,15 @@ const Home = () => {
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 text-sm sm:text-base">今日新词数量</span>
-                <span className="text-xl sm:text-2xl font-bold text-orange-500">{GRADE_CONFIGS[settings.currentGrade].newCount}</span>
+                <span className="text-xl sm:text-2xl font-bold text-orange-500">{Math.floor(dailyTaskCount / 3)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 text-sm sm:text-base">复习旧词数量</span>
-                <span className="text-xl sm:text-2xl font-bold text-blue-500">{GRADE_CONFIGS[settings.currentGrade].reviewCount}</span>
+                <span className="text-xl sm:text-2xl font-bold text-blue-500">{Math.ceil(dailyTaskCount * 2 / 3)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 text-sm sm:text-base">总数量</span>
-                <span className="text-xl sm:text-2xl font-bold text-gray-800">{GRADE_CONFIGS[settings.currentGrade].total}</span>
+                <span className="text-xl sm:text-2xl font-bold text-gray-800">{dailyTaskCount}</span>
               </div>
               <button
                 onClick={handleGenerateToday}
