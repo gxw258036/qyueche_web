@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { Plus, Edit, Trash2, Search, Filter, BookOpen, CheckCircle2, XCircle, Clock, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Filter, BookOpen, CheckCircle2, XCircle, Clock, X, User } from 'lucide-react';
 import { Vocabulary as VocabularyType } from '@/types';
 
 const Vocabulary: React.FC = () => {
@@ -12,6 +12,8 @@ const Vocabulary: React.FC = () => {
     deleteVocabulary,
     bulkDeleteVocabulary,
     bulkAddVocabulary,
+    currentStudent,
+    students,
   } = useStore();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -166,6 +168,27 @@ const Vocabulary: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
         <div className="text-center px-4">
           <div className="animate-spin mx-auto mb-4 text-orange-500">加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentStudent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
+          <User className="mx-auto mb-4 text-gray-400" size={64} />
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">请先选择学生</h2>
+          <p className="text-gray-600 mb-6">
+            词汇管理需要先选择一个学生。<br />
+            请在首页选择或添加学生。
+          </p>
+          <a
+            href="/"
+            className="inline-block px-6 py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 font-medium"
+          >
+            前往首页选择学生
+          </a>
         </div>
       </div>
     );

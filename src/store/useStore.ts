@@ -118,10 +118,12 @@ export const useStore = create<Store>((set, get) => ({
   addVocabulary: async (word, meaning, type = 'word', studentId, status = 'new') => {
     try {
       const effectiveStudentId = studentId ?? get().currentStudent?.id;
-      if (effectiveStudentId) {
-        await api.vocabulary.create({ word, meaning, type, studentId: effectiveStudentId, status });
-        await get().loadVocabulary();
+      if (!effectiveStudentId) {
+        set({ error: '请先选择或添加学生' });
+        return;
       }
+      await api.vocabulary.create({ word, meaning, type, studentId: effectiveStudentId, status });
+      await get().loadVocabulary();
     } catch (error) {
       set({ error: '添加词汇失败' });
     }
@@ -157,10 +159,12 @@ export const useStore = create<Store>((set, get) => ({
   bulkAddVocabulary: async (words, studentId) => {
     try {
       const effectiveStudentId = studentId ?? get().currentStudent?.id;
-      if (effectiveStudentId) {
-        await api.vocabulary.bulk(words, effectiveStudentId);
-        await get().loadVocabulary();
+      if (!effectiveStudentId) {
+        set({ error: '请先选择或添加学生' });
+        return;
       }
+      await api.vocabulary.bulk(words, effectiveStudentId);
+      await get().loadVocabulary();
     } catch (error) {
       set({ error: '批量添加词汇失败' });
     }
