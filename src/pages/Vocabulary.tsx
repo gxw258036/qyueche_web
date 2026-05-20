@@ -5,7 +5,6 @@ import { Vocabulary as VocabularyType } from '@/types';
 
 const Vocabulary: React.FC = () => {
   const {
-    settings,
     vocabulary,
     loadVocabulary,
     addVocabulary,
@@ -17,19 +16,16 @@ const Vocabulary: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'reviewed' | 'mastered' | 'error'>('all');
-  const [gradeFilter, setGradeFilter] = useState<number>(settings.currentGrade);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingWord, setEditingWord] = useState<VocabularyType | null>(null);
   const [formData, setFormData] = useState<{
     word: string;
     meaning: string;
-    grade: number;
     type: 'word' | 'phrase' | 'sentence';
     status: 'new' | 'reviewed' | 'mastered' | 'error';
   }>({
     word: '',
     meaning: '',
-    grade: settings.currentGrade,
     type: 'word',
     status: 'new',
   });
@@ -47,23 +43,12 @@ const Vocabulary: React.FC = () => {
     init();
   }, []);
 
-  useEffect(() => {
-    if (!loading) {
-      loadVocabulary(gradeFilter);
-    }
-  }, [gradeFilter, loading]);
-
-  useEffect(() => {
-    setGradeFilter(settings.currentGrade);
-  }, [settings.currentGrade]);
-
   const filteredVocabulary = vocabulary.filter(word => {
     const matchesSearch = !searchTerm || 
       word.word.toLowerCase().includes(searchTerm.toLowerCase()) || 
       word.meaning.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || word.status === statusFilter;
-    const matchesGrade = word.grade === gradeFilter;
-    return matchesSearch && matchesStatus && matchesGrade;
+    return matchesSearch && matchesStatus;
   });
 
   useEffect(() => {
@@ -99,9 +84,9 @@ const Vocabulary: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingWord) {
-      await updateVocabulary(editingWord.id, formData.word, formData.meaning, formData.grade, formData.status, formData.type);
+      await updateVocabulary(editingWord.id, formData.word, formData.meaning, formData.status, formData.type);
     } else {
-      await addVocabulary(formData.word, formData.meaning, formData.grade, formData.type);
+      await addVocabulary(formData.word, formData.meaning, formData.type, undefined, formData.status);
     }
     resetForm();
     setShowAddModal(false);
@@ -112,7 +97,6 @@ const Vocabulary: React.FC = () => {
     setFormData({
       word: word.word,
       meaning: word.meaning,
-      grade: word.grade,
       type: word.type || 'word',
       status: word.status,
     });
@@ -129,7 +113,6 @@ const Vocabulary: React.FC = () => {
     setFormData({
       word: '',
       meaning: '',
-      grade: settings.currentGrade,
       type: 'word',
       status: 'new',
     });
@@ -138,7 +121,7 @@ const Vocabulary: React.FC = () => {
 
   const handleBulkImport = async () => {
     const lines = bulkInput.trim().split('\n');
-    const words: { word: string; meaning: string; grade: number }[] = [];
+    const words: { word: string; meaning: string; type?: string }[] = [];
     
     lines.forEach((line) => {
       const parts = line.split(/[,，\t]/);
@@ -146,7 +129,7 @@ const Vocabulary: React.FC = () => {
         const word = parts[0].trim();
         const meaning = parts[1].trim();
         if (word && meaning) {
-          words.push({ word, meaning, grade: settings.currentGrade });
+          words.push({ word, meaning });
         }
       }
     });
@@ -232,15 +215,6 @@ const Vocabulary: React.FC = () => {
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-2.5 mb-3 sm:mb-4">
-            <select
-              value={gradeFilter}
-              onChange={(e) => setGradeFilter(parseInt(e.target.value))}
-              className="px-3 py-2 sm:py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-            >
-              {[2, 3, 4, 5, 6].map((grade) => (
-                <option key={grade} value={grade}>{grade}年级</option>
-              ))}
-            </select>
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
@@ -321,24 +295,19 @@ const Vocabulary: React.FC = () => {
                           <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">自定义</span>
                         )}
                       </div>
-                      <div className="text-gray-600 text-sm mb-2 sm:mb-0">{word.meaning}</div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 sm:hidden">
-                        <span>{word.grade}年级</span>
-                        <span>✓{word.correctCount}</span>
-                        <span>✗{word.errorCount}</span>
-                      </div>
+                      <div className="text-gray-600 text-sm">{word.meaning}</div>
                     </div>
                   </div>
                   <div className="hidden sm:flex items-center gap-2">
                     <button
                       onClick={() => handleEdit(word)}
-                      className="p-2 text-blue-500 hover:bg-blue-100 rounded-lg"
+                      className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"
                     >
                       <Edit size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(word.id)}
-                      className="p-2 text-red-500 hover:bg-red-100 rounded-lg"
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -381,18 +350,6 @@ const Vocabulary: React.FC = () => {
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                     required
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">年级</label>
-                  <select
-                    value={formData.grade}
-                    onChange={(e) => setFormData({ ...formData, grade: parseInt(e.target.value) })}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                  >
-                    {[2, 3, 4, 5, 6].map((grade) => (
-                      <option key={grade} value={grade}>{grade}年级</option>
-                    ))}
-                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">类型</label>

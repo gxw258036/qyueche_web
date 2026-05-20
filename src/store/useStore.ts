@@ -14,17 +14,17 @@ interface Store {
   error: string | null;
 
   loadStudents: () => Promise<void>;
-  addStudent: (name: string, grade: number) => Promise<void>;
-  updateStudent: (id: string, name: string, grade: number, dailyTaskCount?: number) => Promise<void>;
+  addStudent: (name: string, dailyTaskCount?: number) => Promise<void>;
+  updateStudent: (id: string, name: string, dailyTaskCount?: number) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
   setCurrentStudent: (student: Student | null) => void;
 
-  loadVocabulary: (grade?: number, studentId?: string) => Promise<void>;
-  addVocabulary: (word: string, meaning: string, grade: number, type?: string, studentId?: string) => Promise<void>;
-  updateVocabulary: (id: string, word: string, meaning: string, grade: number, status: string, type?: string) => Promise<void>;
+  loadVocabulary: (studentId?: string) => Promise<void>;
+  addVocabulary: (word: string, meaning: string, type?: string, studentId?: string, status?: string) => Promise<void>;
+  updateVocabulary: (id: string, word: string, meaning: string, status: string, type?: string) => Promise<void>;
   deleteVocabulary: (id: string) => Promise<void>;
   bulkDeleteVocabulary: (ids: string[]) => Promise<void>;
-  bulkAddVocabulary: (words: { word: string; meaning: string; grade: number }[], studentId?: string) => Promise<void>;
+  bulkAddVocabulary: (words: { word: string; meaning: string; type?: string }[], studentId?: string) => Promise<void>;
 
   loadDailyTask: () => Promise<DailyTask | null>;
   generateDailyTask: () => Promise<void>;
@@ -32,7 +32,7 @@ interface Store {
   loadDailyTaskHistory: (limit?: number) => Promise<DailyTaskHistory[]>;
 
   loadSettings: () => Promise<void>;
-  updateSettings: (currentGrade?: number, currentStudentId?: string, dailyTaskCount?: number) => Promise<void>;
+  updateSettings: (currentStudentId?: string, dailyTaskCount?: number) => Promise<void>;
 
   loadStatistics: () => Promise<void>;
 
@@ -47,7 +47,7 @@ export const useStore = create<Store>((set, get) => ({
   vocabulary: [],
   dailyTask: null,
   dailyTaskHistory: [],
-  settings: { id: 1, currentGrade: 4 },
+  settings: { id: 1 },
   statistics: null,
   isLoading: false,
   error: null,
@@ -61,24 +61,22 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
-  addStudent: async (name, grade) => {
+  addStudent: async (name, dailyTaskCount) => {
     try {
-      await api.students.create({ name, grade });
+      await api.students.create({ name, dailyTaskCount });
       await get().loadStudents();
     } catch (error) {
       set({ error: '添加学生失败' });
     }
   },
 
-  updateStudent: async (id, name, grade, dailyTaskCount) => {
+  updateStudent: async (id, name, dailyTaskCount) => {
     try {
-      await api.students.update(id, { name, grade, dailyTaskCount });
+      await api.students.update(id, { name, dailyTaskCount });
       await get().loadStudents();
       const current = get().currentStudent;
       if (current && current.id === id) {
-        set({ currentStudent: { ...current, name, grade, dailyTaskCount } });
-        await api.settings.update({ currentGrade: grade });
-        await get().loadSettings();
+        set({ currentStudent: { ...current, name, dailyTaskCount } });
       }
     } catch (error) {
       set({ error: '更新学生失败' });
@@ -101,34 +99,37 @@ export const useStore = create<Store>((set, get) => ({
   setCurrentStudent: (student) => {
     set({ currentStudent: student });
     if (student) {
-      get().updateSettings(student.grade, student.id);
+      get().updateSettings(student.id);
     }
   },
 
-  loadVocabulary: async (grade, studentId) => {
+  loadVocabulary: async (studentId) => {
     try {
-      const effectiveGrade = grade ?? get().settings.currentGrade;
       const effectiveStudentId = studentId ?? get().currentStudent?.id;
-      const vocabulary = await api.vocabulary.getAll({ grade: effectiveGrade, studentId: effectiveStudentId });
-      set({ vocabulary });
+      if (effectiveStudentId) {
+        const vocabulary = await api.vocabulary.getAll({ studentId: effectiveStudentId });
+        set({ vocabulary });
+      }
     } catch (error) {
       set({ error: '获取词汇失败' });
     }
   },
 
-  addVocabulary: async (word, meaning, grade, type = 'word', studentId) => {
+  addVocabulary: async (word, meaning, type = 'word', studentId, status = 'new') => {
     try {
       const effectiveStudentId = studentId ?? get().currentStudent?.id;
-      await api.vocabulary.create({ word, meaning, grade, type, studentId: effectiveStudentId });
-      await get().loadVocabulary();
+      if (effectiveStudentId) {
+        await api.vocabulary.create({ word, meaning, type, studentId: effectiveStudentId, status });
+        await get().loadVocabulary();
+      }
     } catch (error) {
       set({ error: '添加词汇失败' });
     }
   },
 
-  updateVocabulary: async (id, word, meaning, grade, status, type) => {
+  updateVocabulary: async (id, word, meaning, status, type) => {
     try {
-      await api.vocabulary.update(id, { word, meaning, grade, type, status });
+      await api.vocabulary.update(id, { word, meaning, type, status });
       await get().loadVocabulary();
     } catch (error) {
       set({ error: '更新词汇失败' });
@@ -156,8 +157,10 @@ export const useStore = create<Store>((set, get) => ({
   bulkAddVocabulary: async (words, studentId) => {
     try {
       const effectiveStudentId = studentId ?? get().currentStudent?.id;
-      await api.vocabulary.bulk(words, effectiveStudentId);
-      await get().loadVocabulary();
+      if (effectiveStudentId) {
+        await api.vocabulary.bulk(words, effectiveStudentId);
+        await get().loadVocabulary();
+      }
     } catch (error) {
       set({ error: '批量添加词汇失败' });
     }
@@ -165,10 +168,13 @@ export const useStore = create<Store>((set, get) => ({
 
   loadDailyTask: async () => {
     try {
-      const { settings, currentStudent } = get();
-      const task = await api.dailyTask.get(settings.currentGrade, currentStudent?.id);
-      set({ dailyTask: task });
-      return task;
+      const { currentStudent } = get();
+      if (currentStudent) {
+        const task = await api.dailyTask.get(currentStudent.id);
+        set({ dailyTask: task });
+        return task;
+      }
+      return null;
     } catch (error) {
       set({ error: '获取任务失败' });
       return null;
@@ -177,9 +183,11 @@ export const useStore = create<Store>((set, get) => ({
 
   generateDailyTask: async () => {
     try {
-      const { settings, currentStudent } = get();
-      const task = await api.dailyTask.generate(settings.currentGrade, currentStudent?.id);
-      set({ dailyTask: task });
+      const { currentStudent } = get();
+      if (currentStudent) {
+        const task = await api.dailyTask.generate(currentStudent.id);
+        set({ dailyTask: task });
+      }
     } catch (error) {
       set({ error: '生成任务失败' });
     }
@@ -188,8 +196,8 @@ export const useStore = create<Store>((set, get) => ({
   completeDailyTask: async (errorWordIds) => {
     try {
       const { dailyTask, currentStudent } = get();
-      if (dailyTask) {
-        await api.dailyTask.complete(dailyTask.id, errorWordIds, currentStudent?.id);
+      if (dailyTask && currentStudent) {
+        await api.dailyTask.complete(dailyTask.id, errorWordIds, currentStudent.id);
         await get().loadDailyTask();
         await get().loadStatistics();
         await get().loadVocabulary();
@@ -201,10 +209,13 @@ export const useStore = create<Store>((set, get) => ({
 
   loadDailyTaskHistory: async (limit = 30) => {
     try {
-      const { settings, currentStudent } = get();
-      const history = await api.dailyTask.getHistory(settings.currentGrade, currentStudent?.id, limit);
-      set({ dailyTaskHistory: history });
-      return history;
+      const { currentStudent } = get();
+      if (currentStudent) {
+        const history = await api.dailyTask.getHistory(currentStudent.id, limit);
+        set({ dailyTaskHistory: history });
+        return history;
+      }
+      return [];
     } catch (error) {
       set({ error: '获取历史记录失败' });
       return [];
@@ -227,9 +238,9 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
-  updateSettings: async (currentGrade, currentStudentId, dailyTaskCount) => {
+  updateSettings: async (currentStudentId, dailyTaskCount) => {
     try {
-      await api.settings.update({ currentGrade, currentStudentId, dailyTaskCount });
+      await api.settings.update({ currentStudentId, dailyTaskCount });
       await get().loadSettings();
     } catch (error) {
       set({ error: '更新设置失败' });
@@ -238,9 +249,11 @@ export const useStore = create<Store>((set, get) => ({
 
   loadStatistics: async () => {
     try {
-      const { settings, currentStudent } = get();
-      const stats = await api.statistics.get(settings.currentGrade, currentStudent?.id);
-      set({ statistics: stats });
+      const { currentStudent } = get();
+      if (currentStudent) {
+        const stats = await api.statistics.get(currentStudent.id);
+        set({ statistics: stats });
+      }
     } catch (error) {
       set({ error: '获取统计失败' });
     }

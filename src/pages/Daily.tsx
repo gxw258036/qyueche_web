@@ -7,7 +7,6 @@ import HistoryModal from '@/components/HistoryModal';
 
 const Daily: React.FC = () => {
   const {
-    settings,
     dailyTask,
     generateDailyTask,
     completeDailyTask,
@@ -102,7 +101,7 @@ const Daily: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
         <div className="text-center px-4">
           <RefreshCw className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
-          <p className="text-xl text-gray-600">正在加载...</p>
+          <p className="text-xl text-gray-600">加载中...</p>
         </div>
       </div>
     );
@@ -137,7 +136,7 @@ const Daily: React.FC = () => {
             <div>
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-1">今日默写任务</h1>
               <p className="text-gray-600 text-xs sm:text-sm">
-                {settings.currentGrade}年级 · {new Date().toLocaleDateString('zh-CN')}
+                {new Date().toLocaleDateString('zh-CN')}
               </p>
             </div>
           </div>

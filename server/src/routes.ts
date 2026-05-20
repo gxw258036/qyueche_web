@@ -6,8 +6,7 @@ interface Vocabulary {
   id: string;
   word: string;
   meaning: string;
-  grade: number;
-  studentId?: string;
+  studentId: string;
   status: 'new' | 'reviewed' | 'mastered' | 'error';
   correctCount: number;
   errorCount: number;
@@ -36,16 +35,16 @@ router.get('/students', (req, res) => {
 
 router.post('/students', (req, res) => {
   try {
-    const { name, grade, dailyTaskCount } = req.body;
+    const { name, dailyTaskCount } = req.body;
     const today = new Date().toISOString().split('T')[0];
     const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     db.prepare(`
-      INSERT INTO students (id, name, grade, dailyTaskCount, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(id, name, grade, dailyTaskCount || 30, today, today);
+      INSERT INTO students (id, name, dailyTaskCount, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, name, dailyTaskCount || 30, today, today);
 
-    res.json({ id, name, grade, dailyTaskCount: dailyTaskCount || 30, message: '学生添加成功' });
+    res.json({ id, name, dailyTaskCount: dailyTaskCount || 30, message: '学生添加成功' });
   } catch (error: any) {
     if (error.message && error.message.includes('UNIQUE constraint failed')) {
       res.status(400).json({ error: '该学生已存在' });
@@ -58,7 +57,7 @@ router.post('/students', (req, res) => {
 router.put('/students/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { name, grade, dailyTaskCount } = req.body;
+    const { name, dailyTaskCount } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     const updateFields: string[] = [];
@@ -67,10 +66,6 @@ router.put('/students/:id', (req, res) => {
     if (name !== undefined) {
       updateFields.push('name = ?');
       params.push(name);
-    }
-    if (grade !== undefined) {
-      updateFields.push('grade = ?');
-      params.push(grade);
     }
     if (dailyTaskCount !== undefined) {
       updateFields.push('dailyTaskCount = ?');
@@ -111,16 +106,12 @@ router.get('/settings', (req, res) => {
 
 router.put('/settings', (req, res) => {
   try {
-    const { currentGrade, currentStudentId, dailyTaskCount } = req.body;
+    const { currentStudentId, dailyTaskCount } = req.body;
     const today = new Date().toISOString().split('T')[0];
     
     const updateFields: string[] = [];
     const params: any[] = [];
 
-    if (currentGrade !== undefined) {
-      updateFields.push('currentGrade = ?');
-      params.push(currentGrade);
-    }
     if (currentStudentId !== undefined) {
       updateFields.push('currentStudentId = ?');
       params.push(currentStudentId);
@@ -145,16 +136,12 @@ router.put('/settings', (req, res) => {
 
 router.post('/settings', (req, res) => {
   try {
-    const { currentGrade, currentStudentId, dailyTaskCount } = req.body;
+    const { currentStudentId, dailyTaskCount } = req.body;
     const today = new Date().toISOString().split('T')[0];
     
     const updateFields: string[] = [];
     const params: any[] = [];
 
-    if (currentGrade !== undefined) {
-      updateFields.push('currentGrade = ?');
-      params.push(currentGrade);
-    }
     if (currentStudentId !== undefined) {
       updateFields.push('currentStudentId = ?');
       params.push(currentStudentId);
@@ -179,7 +166,6 @@ router.post('/settings', (req, res) => {
 
 router.get('/vocabulary', (req, res) => {
   try {
-    const grade = req.query.grade as string;
     const status = req.query.status as string;
     const search = req.query.search as string;
     const studentId = req.query.studentId as string;
@@ -187,13 +173,8 @@ router.get('/vocabulary', (req, res) => {
     let query = 'SELECT * FROM vocabulary WHERE 1=1';
     const params: any[] = [];
 
-    if (grade) {
-      query += ' AND grade = ?';
-      params.push(Number(grade));
-    }
-
     if (studentId) {
-      query += ' AND (studentId = ? OR studentId IS NULL)';
+      query += ' AND studentId = ?';
       params.push(studentId);
     }
 
@@ -218,14 +199,14 @@ router.get('/vocabulary', (req, res) => {
 
 router.post('/vocabulary', (req, res) => {
   try {
-    const { word, meaning, grade, status, type, studentId } = req.body;
+    const { word, meaning, status, type, studentId } = req.body;
     const today = new Date().toISOString().split('T')[0];
     const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     db.prepare(`
-      INSERT INTO vocabulary (id, word, meaning, grade, type, studentId, status, correctCount, errorCount, addedAt, isCustom)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 1)
-    `).run(id, word, meaning, grade, type || 'word', studentId || null, status || 'new', today);
+      INSERT INTO vocabulary (id, word, meaning, type, studentId, status, correctCount, errorCount, addedAt, isCustom)
+      VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 1)
+    `).run(id, word, meaning, type || 'word', studentId, status || 'new', today);
 
     res.json({ id, message: '词汇添加成功' });
   } catch (error) {
@@ -236,14 +217,14 @@ router.post('/vocabulary', (req, res) => {
 router.put('/vocabulary/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { word, meaning, grade, type, status } = req.body;
+    const { word, meaning, type, status } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     db.prepare(`
       UPDATE vocabulary 
-      SET word = ?, meaning = ?, grade = ?, type = ?, status = ?, updatedAt = ?
+      SET word = ?, meaning = ?, type = ?, status = ?, updatedAt = ?
       WHERE id = ?
-    `).run(word, meaning, grade, type || 'word', status, today, id);
+    `).run(word, meaning, type || 'word', status, today, id);
 
     res.json({ message: '词汇更新成功' });
   } catch (error) {
@@ -286,14 +267,14 @@ router.post('/vocabulary/bulk', (req, res) => {
     let count = 0;
 
     const insert = db.prepare(`
-      INSERT INTO vocabulary (id, word, meaning, grade, type, studentId, status, correctCount, errorCount, addedAt, isCustom)
-      VALUES (?, ?, ?, ?, ?, ?, 'reviewed', 0, 0, ?, 1)
+      INSERT INTO vocabulary (id, word, meaning, type, studentId, status, correctCount, errorCount, addedAt, isCustom)
+      VALUES (?, ?, ?, ?, ?, 'reviewed', 0, 0, ?, 1)
     `);
 
     const insertMany = db.transaction((items: any[]) => {
       for (const item of items) {
         const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        insert.run(id, item.word, item.meaning, item.grade, item.type || 'word', studentId || null, today);
+        insert.run(id, item.word, item.meaning, item.type || 'word', studentId, today);
         count++;
       }
     });
@@ -308,12 +289,11 @@ router.post('/vocabulary/bulk', (req, res) => {
 
 router.get('/daily-task', (req, res) => {
   try {
-    const grade = req.query.grade as string;
     const studentId = req.query.studentId as string;
     const today = new Date().toISOString().split('T')[0];
 
-    const task = db.prepare('SELECT * FROM daily_tasks WHERE date = ? AND grade = ? AND (studentId = ? OR studentId IS NULL)')
-      .get(today, Number(grade), studentId || null) as any;
+    const task = db.prepare('SELECT * FROM daily_tasks WHERE date = ? AND studentId = ?')
+      .get(today, studentId) as any;
 
     if (task) {
       let newWords: Vocabulary[] = [];
@@ -337,7 +317,6 @@ router.get('/daily-task', (req, res) => {
       res.json({
         id: task.id,
         date: task.date,
-        grade: task.grade,
         studentId: task.studentId,
         completed: task.completed === 1,
         newWords,
@@ -355,7 +334,7 @@ router.get('/daily-task', (req, res) => {
 
 router.post('/daily-task/generate', (req, res) => {
   try {
-    const { grade, studentId } = req.body;
+    const { studentId } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     let TARGET_COUNT = 30;
@@ -378,7 +357,7 @@ router.post('/daily-task/generate', (req, res) => {
 
     const allVocabulary = db.prepare(`
       SELECT * FROM vocabulary
-      WHERE grade = ? AND (studentId = ? OR studentId IS NULL)
+      WHERE studentId = ?
       ORDER BY 
         CASE status 
           WHEN 'error' THEN 1 
@@ -387,13 +366,12 @@ router.post('/daily-task/generate', (req, res) => {
           WHEN 'mastered' THEN 4 
         END,
         RANDOM()
-    `).all(Number(grade), studentId || null);
+    `).all(studentId);
 
     if (allVocabulary.length === 0) {
       res.json({
         id: null,
         date: today,
-        grade: Number(grade),
         studentId,
         newWords: [],
         reviewedWords: [],
@@ -430,11 +408,11 @@ router.post('/daily-task/generate', (req, res) => {
     if (currentCount < TARGET_COUNT) {
       const remaining = db.prepare(`
         SELECT * FROM vocabulary
-        WHERE grade = ? AND (studentId = ? OR studentId IS NULL)
+        WHERE studentId = ?
         AND id NOT IN (${Array.from(usedIds).map(() => '?').join(',') || "''"})
         ORDER BY RANDOM()
         LIMIT ?
-      `).all(Number(grade), studentId || null, ...Array.from(usedIds), TARGET_COUNT - currentCount) as Vocabulary[];
+      `).all(studentId, ...Array.from(usedIds), TARGET_COUNT - currentCount) as Vocabulary[];
       
       for (const vocab of remaining) {
         if (vocab.status === 'new') {
@@ -454,19 +432,18 @@ router.post('/daily-task/generate', (req, res) => {
     const taskId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     db.prepare(`
-      DELETE FROM daily_tasks WHERE date = ? AND grade = ? AND (studentId = ? OR studentId IS NULL)
-    `).run(today, Number(grade), studentId || null);
+      DELETE FROM daily_tasks WHERE date = ? AND studentId = ?
+    `).run(today, studentId);
 
     const totalCount = finalNewWords.length + finalReviewedWords.length;
     db.prepare(`
-      INSERT INTO daily_tasks (id, date, grade, studentId, completed, markedErrorWords, newWords, reviewedWords, totalCount)
-      VALUES (?, ?, ?, ?, 0, '[]', ?, ?, ?)
-    `).run(taskId, today, Number(grade), studentId || null, JSON.stringify(finalNewWords), JSON.stringify(finalReviewedWords), totalCount);
+      INSERT INTO daily_tasks (id, date, studentId, completed, markedErrorWords, newWords, reviewedWords, totalCount)
+      VALUES (?, ?, ?, 0, '[]', ?, ?, ?)
+    `).run(taskId, today, studentId, JSON.stringify(finalNewWords), JSON.stringify(finalReviewedWords), totalCount);
 
     res.json({
       id: taskId,
       date: today,
-      grade: Number(grade),
       studentId,
       newWords: finalNewWords,
       reviewedWords: finalReviewedWords,
@@ -580,18 +557,16 @@ router.post('/daily-task/complete', (req, res) => {
 
 router.get('/daily-task/history', (req, res) => {
   try {
-    const grade = req.query.grade as string;
     const studentId = req.query.studentId as string;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 30;
 
     const tasks = db.prepare(`
       SELECT * FROM daily_tasks 
-      WHERE grade = ? 
-      AND (studentId = ? OR studentId IS NULL)
+      WHERE studentId = ?
       AND completed = 1
       ORDER BY date DESC
       LIMIT ?
-    `).all(Number(grade), studentId || null, limit) as any[];
+    `).all(studentId, limit) as any[];
 
     const history = tasks.map(task => {
       let totalCount = 0;
@@ -616,7 +591,6 @@ router.get('/daily-task/history', (req, res) => {
       return {
         id: task.id,
         date: task.date,
-        grade: task.grade,
         totalCount,
         correctCount,
         errorCount,
@@ -635,7 +609,6 @@ router.get('/daily-task/history', (req, res) => {
 
 router.get('/statistics', (req, res) => {
   try {
-    const grade = req.query.grade as string;
     const studentId = req.query.studentId as string;
 
     const stats = {
@@ -646,16 +619,16 @@ router.get('/statistics', (req, res) => {
       error: 0,
     };
 
-    const total = db.prepare('SELECT COUNT(*) as count FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL)')
-      .get(Number(grade), studentId || null) as { count: number };
+    const total = db.prepare('SELECT COUNT(*) as count FROM vocabulary WHERE studentId = ?')
+      .get(studentId) as { count: number };
     stats.total = total.count;
 
     const byStatus = db.prepare(`
       SELECT status, COUNT(*) as count
       FROM vocabulary
-      WHERE grade = ? AND (studentId = ? OR studentId IS NULL)
+      WHERE studentId = ?
       GROUP BY status
-    `).all(Number(grade), studentId || null) as { status: string; count: number }[];
+    `).all(studentId) as { status: string; count: number }[];
 
     for (const row of byStatus) {
       if (row.status in stats) {
@@ -664,16 +637,16 @@ router.get('/statistics', (req, res) => {
     }
 
     const totalCorrect = db.prepare(`
-      SELECT SUM(correctCount) as total FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL)
-    `).get(Number(grade), studentId || null) as { total: number };
+      SELECT SUM(correctCount) as total FROM vocabulary WHERE studentId = ?
+    `).get(studentId) as { total: number };
 
     const totalError = db.prepare(`
-      SELECT SUM(errorCount) as total FROM vocabulary WHERE grade = ? AND (studentId = ? OR studentId IS NULL)
-    `).get(Number(grade), studentId || null) as { total: number };
+      SELECT SUM(errorCount) as total FROM vocabulary WHERE studentId = ?
+    `).get(studentId) as { total: number };
 
     const completedDays = db.prepare(`
-      SELECT COUNT(DISTINCT date) as count FROM daily_tasks WHERE completed = 1 AND grade = ? AND (studentId = ? OR studentId IS NULL)
-    `).get(Number(grade), studentId || null) as { count: number };
+      SELECT COUNT(DISTINCT date) as count FROM daily_tasks WHERE completed = 1 AND studentId = ?
+    `).get(studentId) as { count: number };
 
     res.json({
       ...stats,

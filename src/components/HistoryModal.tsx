@@ -97,9 +97,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
                         <span className="font-medium">{formatDate(task.date)}</span>
                       </div>
                       <div className="flex items-center gap-4">
-                        <div className="text-sm text-gray-500">
-                          {task.grade}年级
-                        </div>
                         <button className="p-1 hover:bg-gray-200 rounded">
                           {expandedId === task.id ? (
                             <ChevronUp size={20} />

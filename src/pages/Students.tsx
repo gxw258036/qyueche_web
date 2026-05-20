@@ -5,11 +5,11 @@ import { Student } from '@/types';
 import { api } from '@/services/api';
 
 const Students: React.FC = () => {
-  const { students, loadStudents, addStudent, updateStudent, deleteStudent, currentStudent, settings } = useStore();
+  const { students, loadStudents, addStudent, updateStudent, deleteStudent, currentStudent } = useStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [formData, setFormData] = useState({ name: '', grade: 2, dailyTaskCount: 30 });
+  const [formData, setFormData] = useState({ name: '', dailyTaskCount: 30 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,8 +22,8 @@ const Students: React.FC = () => {
 
   const handleAdd = async () => {
     if (formData.name.trim()) {
-      await api.students.create({ name: formData.name, grade: formData.grade, dailyTaskCount: formData.dailyTaskCount });
-      setFormData({ name: '', grade: 2, dailyTaskCount: 30 });
+      await api.students.create({ name: formData.name, dailyTaskCount: formData.dailyTaskCount });
+      setFormData({ name: '', dailyTaskCount: 30 });
       setShowAddModal(false);
       await loadStudents();
     }
@@ -31,15 +31,15 @@ const Students: React.FC = () => {
 
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
-    setFormData({ name: student.name, grade: student.grade, dailyTaskCount: student.dailyTaskCount || 30 });
+    setFormData({ name: student.name, dailyTaskCount: student.dailyTaskCount || 30 });
     setShowEditModal(true);
   };
 
   const handleUpdate = async () => {
     if (editingStudent && formData.name.trim()) {
-      await api.students.update(editingStudent.id, { name: formData.name, grade: formData.grade, dailyTaskCount: formData.dailyTaskCount });
+      await api.students.update(editingStudent.id, { name: formData.name, dailyTaskCount: formData.dailyTaskCount });
       setEditingStudent(null);
-      setFormData({ name: '', grade: 2, dailyTaskCount: 30 });
+      setFormData({ name: '', dailyTaskCount: 30 });
       setShowEditModal(false);
       await loadStudents();
       window.location.reload();
@@ -55,7 +55,7 @@ const Students: React.FC = () => {
 
   const handleSetCurrent = async (student: Student) => {
     try {
-      await api.settings.update({ currentStudentId: student.id, currentGrade: student.grade });
+      await api.settings.update({ currentStudentId: student.id });
       await loadStudents();
       window.location.reload();
     } catch (error) {
@@ -84,7 +84,7 @@ const Students: React.FC = () => {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800">学生管理</h1>
-              <p className="text-gray-600 text-xs sm:text-sm">管理学生信息和年级设置</p>
+              <p className="text-gray-600 text-xs sm:text-sm">管理学生信息</p>
             </div>
           </div>
           <button
@@ -107,13 +107,6 @@ const Students: React.FC = () => {
                 <div className="flex-1">
                   <div className="font-medium text-gray-800 text-sm">{student.name}</div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                      student.grade === 2 || student.grade === 3 || student.grade === 4
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-purple-100 text-purple-700'
-                    }`}>
-                      {student.grade}年级
-                    </span>
                     <span className="text-xs text-gray-500">
                       {student.dailyTaskCount || 30}词/天
                     </span>
@@ -165,7 +158,6 @@ const Students: React.FC = () => {
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">姓名</th>
-                  <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">年级</th>
                   <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">每日任务</th>
                   <th className="text-left py-2.5 px-3 text-gray-600 font-medium text-sm">当前状态</th>
                   <th className="text-right py-2.5 px-3 text-gray-600 font-medium text-sm">操作</th>
@@ -181,15 +173,6 @@ const Students: React.FC = () => {
                         </div>
                         <span className="font-medium text-gray-800 text-sm">{student.name}</span>
                       </div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        student.grade === 2 || student.grade === 3 || student.grade === 4
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-purple-100 text-purple-700'
-                      }`}>
-                        {student.grade}年级
-                      </span>
                     </td>
                     <td className="py-3 px-3">
                       <span className="text-sm text-gray-700">{student.dailyTaskCount || 30}词/天</span>
@@ -244,23 +227,6 @@ const Students: React.FC = () => {
             )}
           </div>
         </div>
-
-        {/* Grade Config Info */}
-        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">年级配置说明</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <h3 className="font-medium text-blue-800 mb-1.5 text-sm">低年级 (2-4年级)</h3>
-              <p className="text-blue-600 text-xs sm:text-sm">每日默写字数: 30个词汇</p>
-              <p className="text-blue-600 text-xs sm:text-sm mt-0.5">包含基础词汇和常用短语</p>
-            </div>
-            <div className="p-3 bg-purple-50 rounded-lg">
-              <h3 className="font-medium text-purple-800 mb-1.5 text-sm">高年级 (5-6年级)</h3>
-              <p className="text-purple-600 text-xs sm:text-sm">每日默写字数: 40个词汇</p>
-              <p className="text-purple-600 text-xs sm:text-sm mt-0.5">包含进阶词汇和复杂短语</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Add Modal */}
@@ -289,23 +255,6 @@ const Students: React.FC = () => {
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="请输入学生姓名"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  年级
-                </label>
-                <select
-                  value={formData.grade}
-                  onChange={(e) => setFormData({ ...formData, grade: parseInt(e.target.value) })}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                >
-                  <option value="2">二年级</option>
-                  <option value="3">三年级</option>
-                  <option value="4">四年级</option>
-                  <option value="5">五年级</option>
-                  <option value="6">六年级</option>
-                </select>
               </div>
 
               <div>
@@ -378,23 +327,6 @@ const Students: React.FC = () => {
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   placeholder="请输入学生姓名"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  年级
-                </label>
-                <select
-                  value={formData.grade}
-                  onChange={(e) => setFormData({ ...formData, grade: parseInt(e.target.value) })}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                >
-                  <option value="2">二年级</option>
-                  <option value="3">三年级</option>
-                  <option value="4">四年级</option>
-                  <option value="5">五年级</option>
-                  <option value="6">六年级</option>
-                </select>
               </div>
 
               <div>

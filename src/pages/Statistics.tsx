@@ -19,7 +19,7 @@ const Statistics: React.FC = () => {
     if (!loading) {
       loadStatistics();
     }
-  }, [settings.currentGrade, vocabulary, loading]);
+  }, [vocabulary, loading]);
 
   useEffect(() => {
     if (statistics) {

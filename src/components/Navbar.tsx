@@ -5,24 +5,21 @@ import { Student } from '@/types';
 import { api } from '@/services/api';
 
 const Navbar: React.FC = () => {
-  const { currentStudent, students, settings, loadStudents, loadSettings } = useStore();
+  const { currentStudent, students, loadStudents, setCurrentStudent } = useStore();
   const [showStudentMenu, setShowStudentMenu] = useState(false);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
-  const [newStudentGrade, setNewStudentGrade] = useState('2');
 
   useEffect(() => {
     loadStudents();
-    loadSettings();
   }, []);
 
   const handleAddStudent = async () => {
     if (newStudentName.trim()) {
       try {
         await api.students.create({ 
-          name: newStudentName, 
-          grade: parseInt(newStudentGrade) 
+          name: newStudentName
         });
         setNewStudentName('');
         setShowAddStudentModal(false);
@@ -35,8 +32,9 @@ const Navbar: React.FC = () => {
 
   const handleSelectStudent = async (student: Student) => {
     try {
-      await api.settings.update({ currentStudentId: student.id, currentGrade: student.grade });
-      window.location.reload();
+      await setCurrentStudent(student);
+      setShowStudentMenu(false);
+      setShowMobileMenu(false);
     } catch (error) {
       console.error('切换学生失败:', error);
     }
@@ -66,7 +64,7 @@ const Navbar: React.FC = () => {
                 {currentStudent && (
                   <span className="text-xs text-gray-500 flex items-center gap-1">
                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    {currentStudent.name} · {currentStudent.grade}年级
+                    {currentStudent.name}
                   </span>
                 )}
               </div>
@@ -100,7 +98,6 @@ const Navbar: React.FC = () => {
                         }`}
                       >
                         <span className="font-medium text-gray-700">{student.name}</span>
-                        <span className="text-sm text-gray-500">{student.grade}年级</span>
                       </button>
                     ))}
                     <div className="border-t border-gray-100 mt-2 pt-2">
@@ -118,12 +115,6 @@ const Navbar: React.FC = () => {
                   </div>
                 )}
               </div>
-
-              {currentStudent && (
-                <span className="text-sm text-gray-500">
-                  {currentStudent.grade}年级
-                </span>
-              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -185,10 +176,7 @@ const Navbar: React.FC = () => {
                     return (
                       <button
                         key={student.id}
-                        onClick={() => {
-                          handleSelectStudent(student);
-                          setShowMobileMenu(false);
-                        }}
+                        onClick={() => handleSelectStudent(student)}
                         className={`w-full px-4 py-3 text-left flex items-center justify-between border-b border-gray-100 last:border-0 ${
                           isActive
                             ? 'bg-gradient-to-r from-orange-50 to-blue-50 border-l-4 border-l-orange-500'
@@ -209,7 +197,6 @@ const Navbar: React.FC = () => {
                             <span className={`font-medium ${isActive ? 'text-gray-800' : 'text-gray-700'}`}>
                               {student.name}
                             </span>
-                            <span className="text-xs text-gray-500">{student.grade}年级</span>
                           </div>
                         </div>
                         {isActive && (
@@ -288,23 +275,6 @@ const Navbar: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="请输入学生姓名"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  年级
-                </label>
-                <select
-                  value={newStudentGrade}
-                  onChange={(e) => setNewStudentGrade(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                >
-                  <option value="2">二年级</option>
-                  <option value="3">三年级</option>
-                  <option value="4">四年级</option>
-                  <option value="5">五年级</option>
-                  <option value="6">六年级</option>
-                </select>
               </div>
 
               <div className="flex gap-3 pt-4">

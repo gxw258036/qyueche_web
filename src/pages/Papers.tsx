@@ -5,10 +5,9 @@ import { Vocabulary } from '@/types';
 import { printPaper } from '@/utils/pdf';
 
 const Papers: React.FC = () => {
-  const { settings, loadVocabulary, vocabulary } = useStore();
+  const { loadVocabulary, vocabulary } = useStore();
   const [loading, setLoading] = useState(true);
   const [paperConfig, setPaperConfig] = useState({
-    grade: settings.currentGrade,
     newWordsCount: 5,
     reviewedWordsCount: 25,
   });
@@ -22,14 +21,9 @@ const Papers: React.FC = () => {
     init();
   }, []);
 
-  const getFilteredVocabulary = () => {
-    return vocabulary.filter(v => v.grade === paperConfig.grade);
-  };
-
   const getWordsForPaper = (): Vocabulary[] => {
-    const filtered = getFilteredVocabulary();
-    const newWords = filtered.filter(v => v.status === 'new').slice(0, paperConfig.newWordsCount);
-    const reviewedWords = filtered.filter(v => v.status !== 'new').slice(0, paperConfig.reviewedWordsCount);
+    const newWords = vocabulary.filter(v => v.status === 'new').slice(0, paperConfig.newWordsCount);
+    const reviewedWords = vocabulary.filter(v => v.status !== 'new').slice(0, paperConfig.reviewedWordsCount);
     const shuffled = [...newWords, ...reviewedWords].sort(() => Math.random() - 0.5);
     return shuffled;
   };
@@ -43,11 +37,10 @@ const Papers: React.FC = () => {
     }
   };
 
-  const filteredVocabulary = getFilteredVocabulary();
   const stats = {
-    total: filteredVocabulary.length,
-    new: filteredVocabulary.filter(v => v.status === 'new').length,
-    reviewed: filteredVocabulary.filter(v => v.status !== 'new').length,
+    total: vocabulary.length,
+    new: vocabulary.filter(v => v.status === 'new').length,
+    reviewed: vocabulary.filter(v => v.status !== 'new').length,
   };
 
   if (loading) {
@@ -90,22 +83,6 @@ const Papers: React.FC = () => {
           <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">试卷配置</h2>
           
           <div className="space-y-3 sm:space-y-4">
-            {/* Grade Selection */}
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">选择年级</label>
-              <select
-                value={paperConfig.grade}
-                onChange={(e) => setPaperConfig({ ...paperConfig, grade: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 sm:py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-              >
-                {[2, 3, 4, 5, 6].map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade}年级
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* New Words Count */}
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">

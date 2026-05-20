@@ -7,13 +7,13 @@ export const api = {
 
   students: {
     getAll: () => fetch(`${API_BASE}/students`).then(res => res.json()) as Promise<Student[]>,
-    create: (data: { name: string; grade: number; dailyTaskCount?: number }) => 
+    create: (data: { name: string; dailyTaskCount?: number }) => 
       fetch(`${API_BASE}/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       }).then(res => res.json()),
-    update: (id: string, data: { name?: string; grade?: number; dailyTaskCount?: number }) =>
+    update: (id: string, data: { name?: string; dailyTaskCount?: number }) =>
       fetch(`${API_BASE}/students/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -25,7 +25,7 @@ export const api = {
 
   settings: {
     get: () => fetch(`${API_BASE}/settings`).then(res => res.json()) as Promise<Settings>,
-    update: (data: { currentGrade?: number; currentStudentId?: string; dailyTaskCount?: number }) =>
+    update: (data: { currentStudentId?: string; dailyTaskCount?: number }) =>
       fetch(`${API_BASE}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -34,21 +34,20 @@ export const api = {
   },
 
   vocabulary: {
-    getAll: (params?: { grade?: number; status?: string; search?: string; studentId?: string }) => {
+    getAll: (params?: { status?: string; search?: string; studentId?: string }) => {
       const query = new URLSearchParams();
-      if (params?.grade) query.set('grade', params.grade.toString());
       if (params?.status) query.set('status', params.status);
       if (params?.search) query.set('search', params.search);
       if (params?.studentId) query.set('studentId', params.studentId);
       return fetch(`${API_BASE}/vocabulary?${query}`).then(res => res.json()) as Promise<Vocabulary[]>;
     },
-    create: (data: { word: string; meaning: string; grade: number; type?: string; studentId?: string }) =>
+    create: (data: { word: string; meaning: string; type?: string; studentId?: string; status?: string }) =>
       fetch(`${API_BASE}/vocabulary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       }).then(res => res.json()),
-    update: (id: string, data: { word: string; meaning: string; grade: number; type?: string; status: string }) =>
+    update: (id: string, data: { word: string; meaning: string; type?: string; status: string }) =>
       fetch(`${API_BASE}/vocabulary/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -62,7 +61,7 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids })
       }).then(res => res.json()),
-    bulk: (words: { word: string; meaning: string; grade: number; type?: string }[], studentId?: string) =>
+    bulk: (words: { word: string; meaning: string; type?: string }[], studentId?: string) =>
       fetch(`${API_BASE}/vocabulary/bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,17 +70,16 @@ export const api = {
   },
 
   dailyTask: {
-    get: (grade: number, studentId?: string) => {
+    get: (studentId: string) => {
       const query = new URLSearchParams();
-      query.set('grade', grade.toString());
       if (studentId) query.set('studentId', studentId);
       return fetch(`${API_BASE}/daily-task?${query}`).then(res => res.json()) as Promise<DailyTask | null>;
     },
-    generate: (grade: number, studentId?: string) =>
+    generate: (studentId: string) =>
       fetch(`${API_BASE}/daily-task/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grade, studentId })
+        body: JSON.stringify({ studentId })
       }).then(res => res.json()) as Promise<DailyTask>,
     complete: (taskId: string, errorWordIds: string[], studentId?: string) =>
       fetch(`${API_BASE}/daily-task/complete`, {
@@ -89,9 +87,8 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId, errorWordIds, studentId })
       }).then(res => res.json()),
-    getHistory: (grade: number, studentId?: string, limit?: number) => {
+    getHistory: (studentId: string, limit?: number) => {
       const query = new URLSearchParams();
-      query.set('grade', grade.toString());
       if (studentId) query.set('studentId', studentId);
       if (limit) query.set('limit', limit.toString());
       return fetch(`${API_BASE}/daily-task/history?${query}`).then(res => res.json()) as Promise<DailyTaskHistory[]>;
@@ -99,9 +96,8 @@ export const api = {
   },
 
   statistics: {
-    get: (grade: number, studentId?: string) => {
+    get: (studentId: string) => {
       const query = new URLSearchParams();
-      query.set('grade', grade.toString());
       if (studentId) query.set('studentId', studentId);
       return fetch(`${API_BASE}/statistics?${query}`).then(res => res.json()) as Promise<Statistics>;
     }

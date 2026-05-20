@@ -11,19 +11,17 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS students (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    grade INTEGER NOT NULL CHECK(grade >= 2 AND grade <= 6),
     dailyTaskCount INTEGER DEFAULT 30,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(name, grade)
+    UNIQUE(name)
   );
 
   CREATE TABLE IF NOT EXISTS vocabulary (
     id TEXT PRIMARY KEY,
     word TEXT NOT NULL,
     meaning TEXT NOT NULL,
-    grade INTEGER NOT NULL CHECK(grade >= 2 AND grade <= 6),
-    studentId TEXT,
+    studentId TEXT NOT NULL,
     type TEXT NOT NULL DEFAULT 'word' CHECK(type IN ('word', 'phrase', 'sentence')),
     status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'reviewed', 'mastered', 'error')),
     correctCount INTEGER DEFAULT 0,
@@ -33,14 +31,13 @@ db.exec(`
     isCustom INTEGER DEFAULT 0,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE SET NULL
+    FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS daily_tasks (
     id TEXT PRIMARY KEY,
     date TEXT NOT NULL,
-    grade INTEGER NOT NULL,
-    studentId TEXT,
+    studentId TEXT NOT NULL,
     completed INTEGER DEFAULT 0,
     markedErrorWords TEXT,
     newWords TEXT,
@@ -50,12 +47,11 @@ db.exec(`
     totalCount INTEGER DEFAULT 0,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE,
-    UNIQUE(date, grade, studentId)
+    UNIQUE(date, studentId)
   );
 
   CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY CHECK (id = 1),
-    currentGrade INTEGER DEFAULT 4,
     currentStudentId TEXT,
     lastStudyDate TEXT,
     dailyTaskCount INTEGER DEFAULT 30,
@@ -65,8 +61,6 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_students_name ON students(name);
-  CREATE INDEX IF NOT EXISTS idx_students_grade ON students(grade);
-  CREATE INDEX IF NOT EXISTS idx_vocabulary_grade ON vocabulary(grade);
   CREATE INDEX IF NOT EXISTS idx_vocabulary_status ON vocabulary(status);
   CREATE INDEX IF NOT EXISTS idx_vocabulary_studentId ON vocabulary(studentId);
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_date ON daily_tasks(date);
@@ -124,7 +118,7 @@ try {
 const initSettings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
 if (!initSettings) {
   const today = new Date().toISOString().split('T')[0];
-  db.prepare('INSERT INTO settings (id, currentGrade, lastStudyDate, dailyTaskCount) VALUES (1, 4, ?, 30)').run(today);
+  db.prepare('INSERT INTO settings (id, lastStudyDate, dailyTaskCount) VALUES (1, ?, 30)').run(today);
 }
 
 export default db;
