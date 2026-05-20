@@ -43,7 +43,7 @@ const Vocabulary: React.FC = () => {
       setLoading(false);
     };
     init();
-  }, []);
+  }, [currentStudent]);
 
   const filteredVocabulary = vocabulary.filter(word => {
     const matchesSearch = !searchTerm || 
