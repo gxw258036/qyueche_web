@@ -67,6 +67,111 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_studentId ON daily_tasks(studentId);
 `);
 
+// 数据库迁移：移除旧的 grade 字段
+function migrateDatabase() {
+  try {
+    // 检查 students 表是否有 grade 列
+    const studentsColumns = db.prepare("PRAGMA table_info(students)").all() as any[];
+    const hasGradeColumn = studentsColumns.some(col => col.name === 'grade');
+
+    if (hasGradeColumn) {
+      console.log('⚠ 检测到旧数据库 schema，正在迁移...');
+
+      // 1. 创建新的 students 表（不含 grade 列）
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS students_new (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          dailyTaskCount INTEGER DEFAULT 30,
+          createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(name)
+        );
+      `);
+
+      // 2. 复制数据到新表（排除 grade 列）
+      db.exec(`
+        INSERT INTO students_new (id, name, dailyTaskCount, createdAt, updatedAt)
+        SELECT id, name, COALESCE(dailyTaskCount, 30), createdAt, updatedAt
+        FROM students;
+      `);
+
+      // 3. 删除旧表
+      db.exec('DROP TABLE students;');
+
+      // 4. 重命名新表
+      db.exec('ALTER TABLE students_new RENAME TO students;');
+
+      console.log('✓ students 表迁移完成');
+    }
+
+    // 检查 vocabulary 表是否有 grade 列
+    const vocabColumns = db.prepare("PRAGMA table_info(vocabulary)").all() as any[];
+    const hasVocabGradeColumn = vocabColumns.some(col => col.name === 'grade');
+
+    if (hasVocabGradeColumn) {
+      console.log('⚠ 检测到 vocabulary 表的旧 schema，正在迁移...');
+
+      // 1. 创建新的 vocabulary 表（不含 grade 列）
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS vocabulary_new (
+          id TEXT PRIMARY KEY,
+          word TEXT NOT NULL,
+          meaning TEXT NOT NULL,
+          studentId TEXT NOT NULL,
+          type TEXT NOT NULL DEFAULT 'word' CHECK(type IN ('word', 'phrase', 'sentence')),
+          status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'reviewed', 'mastered', 'error')),
+          correctCount INTEGER DEFAULT 0,
+          errorCount INTEGER DEFAULT 0,
+          addedAt TEXT NOT NULL,
+          lastReviewedAt TEXT,
+          isCustom INTEGER DEFAULT 0,
+          createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
+        );
+      `);
+
+      // 2. 复制数据到新表（排除 grade 列，使用默认值补充缺失字段）
+      db.exec(`
+        INSERT INTO vocabulary_new (id, word, meaning, studentId, type, status, correctCount, errorCount, addedAt, lastReviewedAt, isCustom, createdAt, updatedAt)
+        SELECT 
+          id, 
+          word, 
+          meaning, 
+          COALESCE(studentId, '') as studentId,
+          COALESCE(type, 'word') as type,
+          COALESCE(status, 'new') as status,
+          COALESCE(correctCount, 0) as correctCount,
+          COALESCE(errorCount, 0) as errorCount,
+          COALESCE(addedAt, CURRENT_TIMESTAMP) as addedAt,
+          lastReviewedAt,
+          COALESCE(isCustom, 0) as isCustom,
+          COALESCE(createdAt, CURRENT_TIMESTAMP) as createdAt,
+          COALESCE(updatedAt, CURRENT_TIMESTAMP) as updatedAt
+        FROM vocabulary;
+      `);
+
+      // 3. 删除旧表
+      db.exec('DROP TABLE vocabulary;');
+
+      // 4. 重命名新表
+      db.exec('ALTER TABLE vocabulary_new RENAME TO vocabulary;');
+
+      console.log('✓ vocabulary 表迁移完成');
+    }
+
+    if (hasGradeColumn || hasVocabGradeColumn) {
+      console.log('✓ 数据库迁移完成！');
+    }
+  } catch (error) {
+    console.error('⚠ 数据库迁移失败，请手动删除数据库文件重试:', error);
+  }
+}
+
+// 执行数据库迁移
+migrateDatabase();
+
 // 为 vocabulary 表添加缺失的字段
 try {
   db.prepare('ALTER TABLE vocabulary ADD COLUMN type TEXT DEFAULT "word"').run();
