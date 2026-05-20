@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
-import { BookOpen, Home, FileText, Users, BarChart3, ChevronDown, Plus, X, Menu } from 'lucide-react';
+import { BookOpen, Home, FileText, Users, BarChart3, ChevronDown, Plus, X, Menu, Database } from 'lucide-react';
 import { Student } from '@/types';
 import { api } from '@/services/api';
 
@@ -47,6 +47,7 @@ const Navbar: React.FC = () => {
     { path: '/papers', label: '试卷', icon: FileText },
     { path: '/statistics', label: '统计', icon: BarChart3 },
     { path: '/students', label: '学生', icon: Users },
+    { path: '/data-migration', label: '数据迁移', icon: Database },
   ];
 
   return (

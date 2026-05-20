@@ -8,6 +8,7 @@ import Vocabulary from '@/pages/Vocabulary';
 import Papers from '@/pages/Papers';
 import Statistics from '@/pages/Statistics';
 import Students from '@/pages/Students';
+import DataMigration from '@/pages/DataMigration';
 
 function App() {
   const { loadSettings, loadStudents, loadVocabulary, loadDailyTask, loadStatistics, error, clearError } = useStore();
@@ -40,6 +41,7 @@ function App() {
           <Route path="/papers" element={<Papers />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/students" element={<Students />} />
+          <Route path="/data-migration" element={<DataMigration />} />
         </Routes>
       </main>
     </div>

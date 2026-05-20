@@ -659,4 +659,134 @@ router.get('/statistics', (req, res) => {
   }
 });
 
+router.get('/export', (req, res) => {
+  try {
+    const students = db.prepare('SELECT * FROM students').all();
+    const vocabulary = db.prepare('SELECT * FROM vocabulary').all();
+    const dailyTasks = db.prepare('SELECT * FROM daily_tasks').all();
+    const settings = db.prepare('SELECT * FROM settings').all();
+
+    const exportData = {
+      version: '1.0',
+      exportTime: new Date().toISOString(),
+      students,
+      vocabulary,
+      dailyTasks,
+      settings
+    };
+
+    res.json(exportData);
+  } catch (error) {
+    console.error('导出数据失败:', error);
+    res.status(500).json({ error: '导出数据失败' });
+  }
+});
+
+router.post('/import', (req, res) => {
+  try {
+    const data = req.body;
+    
+    if (!data || !data.students) {
+      res.status(400).json({ error: '无效的导入数据' });
+      return;
+    }
+
+    db.prepare('BEGIN').run();
+
+    try {
+      if (data.students && Array.isArray(data.students)) {
+        const insertStudent = db.prepare(`
+          INSERT OR REPLACE INTO students (id, name, dailyTaskCount, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+        
+        for (const student of data.students) {
+          insertStudent.run(
+            student.id,
+            student.name,
+            student.dailyTaskCount || 30,
+            student.createdAt || new Date().toISOString(),
+            student.updatedAt || new Date().toISOString()
+          );
+        }
+      }
+
+      if (data.vocabulary && Array.isArray(data.vocabulary)) {
+        const insertVocabulary = db.prepare(`
+          INSERT OR REPLACE INTO vocabulary (id, word, meaning, studentId, type, status, correctCount, errorCount, addedAt, lastReviewedAt, isCustom, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        for (const vocab of data.vocabulary) {
+          insertVocabulary.run(
+            vocab.id,
+            vocab.word,
+            vocab.meaning,
+            vocab.studentId,
+            vocab.type || 'word',
+            vocab.status || 'new',
+            vocab.correctCount || 0,
+            vocab.errorCount || 0,
+            vocab.addedAt || new Date().toISOString(),
+            vocab.lastReviewedAt,
+            vocab.isCustom || 0,
+            vocab.createdAt || new Date().toISOString(),
+            vocab.updatedAt || new Date().toISOString()
+          );
+        }
+      }
+
+      if (data.dailyTasks && Array.isArray(data.dailyTasks)) {
+        const insertDailyTask = db.prepare(`
+          INSERT OR REPLACE INTO daily_tasks (id, date, studentId, completed, markedErrorWords, newWords, reviewedWords, correctCount, errorCount, totalCount, createdAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        for (const task of data.dailyTasks) {
+          insertDailyTask.run(
+            task.id,
+            task.date,
+            task.studentId,
+            task.completed || 0,
+            task.markedErrorWords,
+            task.newWords,
+            task.reviewedWords,
+            task.correctCount || 0,
+            task.errorCount || 0,
+            task.totalCount || 0,
+            task.createdAt || new Date().toISOString()
+          );
+        }
+      }
+
+      if (data.settings && Array.isArray(data.settings)) {
+        const insertSettings = db.prepare(`
+          INSERT OR REPLACE INTO settings (id, currentStudentId, lastStudyDate, dailyTaskCount, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        
+        for (const setting of data.settings) {
+          insertSettings.run(
+            setting.id || 1,
+            setting.currentStudentId,
+            setting.lastStudyDate,
+            setting.dailyTaskCount || 30,
+            setting.createdAt || new Date().toISOString(),
+            setting.updatedAt || new Date().toISOString()
+          );
+        }
+      }
+
+      db.prepare('COMMIT').run();
+      res.json({ message: '数据导入成功' });
+    } catch (error) {
+      db.prepare('ROLLBACK').run();
+      throw error;
+    }
+  } catch (error) {
+    console.error('导入数据失败:', error);
+    res.status(500).json({ error: '导入数据失败' });
+  }
+});
+
 export default router;

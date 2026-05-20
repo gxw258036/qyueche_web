@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory } from '@/types';
-import { api } from '@/services/api';
+import { api, ExportData } from '@/services/api';
 
 interface Store {
   students: Student[];
@@ -35,6 +35,9 @@ interface Store {
   updateSettings: (currentStudentId?: string, dailyTaskCount?: number) => Promise<void>;
 
   loadStatistics: () => Promise<void>;
+
+  exportData: () => Promise<ExportData | null>;
+  importData: (data: ExportData) => Promise<void>;
 
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -260,6 +263,29 @@ export const useStore = create<Store>((set, get) => ({
       }
     } catch (error) {
       set({ error: '获取统计失败' });
+    }
+  },
+
+  exportData: async () => {
+    try {
+      const data = await api.export();
+      return data;
+    } catch (error) {
+      set({ error: '导出数据失败' });
+      return null;
+    }
+  },
+
+  importData: async (data) => {
+    try {
+      await api.import(data);
+      await get().loadStudents();
+      await get().loadSettings();
+      await get().loadVocabulary();
+      await get().loadDailyTask();
+      await get().loadStatistics();
+    } catch (error) {
+      set({ error: '导入数据失败' });
     }
   },
 

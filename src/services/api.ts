@@ -2,8 +2,26 @@ import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory 
 
 const API_BASE = '/api';
 
+export interface ExportData {
+  version: string;
+  exportTime: string;
+  students: Student[];
+  vocabulary: Vocabulary[];
+  dailyTasks: any[];
+  settings: Settings[];
+}
+
 export const api = {
   init: () => fetch(`${API_BASE}/init`).then(res => res.json()),
+  
+  export: () => fetch(`${API_BASE}/export`).then(res => res.json()) as Promise<ExportData>,
+  
+  import: (data: ExportData) => 
+    fetch(`${API_BASE}/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(res => res.json()),
 
   students: {
     getAll: () => fetch(`${API_BASE}/students`).then(res => res.json()) as Promise<Student[]>,
