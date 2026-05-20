@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { settings, vocabulary, updateSettings, dailyTask, statistics, loadVocabulary, currentStudent, students, loadStudents, setCurrentStudent } = useStore();
+  const { settings, vocabulary, updateSettings, dailyTask, statistics, loadVocabulary, currentStudent, students, loadStudents, setCurrentStudent, updateStudent } = useStore();
   const [stats, setStats] = useState<any>(null);
-  const [dailyTaskCount, setDailyTaskCount] = useState<number>(settings.dailyTaskCount || 30);
+  const [dailyTaskCount, setDailyTaskCount] = useState<number>(30);
 
   useEffect(() => {
     loadStudents();
@@ -17,6 +17,7 @@ const Home = () => {
     if (currentStudent) {
       loadVocabulary();
       setStats(statistics);
+      setDailyTaskCount(currentStudent.dailyTaskCount || 30);
     }
   }, [currentStudent]);
 
@@ -26,13 +27,10 @@ const Home = () => {
     }
   }, [statistics]);
 
-  useEffect(() => {
-    setDailyTaskCount(settings.dailyTaskCount || 30);
-  }, [settings.dailyTaskCount]);
-
   const handleDailyTaskCountChange = async (count: number) => {
+    if (!currentStudent) return;
     setDailyTaskCount(count);
-    await updateSettings(undefined, count);
+    await updateStudent(currentStudent.id, { dailyTaskCount: count });
   };
 
   const handleGenerateToday = async () => {
