@@ -26,10 +26,10 @@ interface Store {
   bulkDeleteVocabulary: (ids: string[]) => Promise<void>;
   bulkAddVocabulary: (words: { word: string; meaning: string; type?: string }[], studentId?: string) => Promise<void>;
 
-  loadDailyTask: () => Promise<DailyTask | null>;
+  loadDailyTask: () => Promise<void>;
   generateDailyTask: () => Promise<void>;
   completeDailyTask: (errorWordIds: string[]) => Promise<void>;
-  loadDailyTaskHistory: (limit?: number) => Promise<DailyTaskHistory[]>;
+  loadDailyTaskHistory: (limit?: number) => Promise<void>;
 
   loadSettings: () => Promise<void>;
   updateSettings: (currentStudentId?: string, dailyTaskCount?: number) => Promise<void>;
@@ -114,7 +114,7 @@ export const useStore = create<Store>((set, get) => ({
     try {
       const effectiveStudentId = studentId ?? get().currentStudent?.id;
       if (effectiveStudentId) {
-        const vocabulary = await api.vocabulary.getAll(effectiveStudentId);
+        const vocabulary = await api.vocabulary.getAll({ studentId: effectiveStudentId });
         set({ vocabulary });
       }
     } catch (error) {
@@ -221,7 +221,7 @@ export const useStore = create<Store>((set, get) => ({
     try {
       const { currentStudent } = get();
       if (currentStudent) {
-        const history = await api.dailyTask.history(currentStudent.id, limit);
+        const history = await api.dailyTask.getHistory(currentStudent.id, limit);
         set({ dailyTaskHistory: history });
       }
     } catch (error) {
