@@ -28,7 +28,7 @@ interface Store {
 
   loadDailyTask: () => Promise<DailyTask | null>;
   generateDailyTask: () => Promise<void>;
-  completeDailyTask: (errorWordIds: string[]) => Promise<void>;
+  completeDailyTask: (errorWordIds: string[]) => Promise<DailyTask | null>;
   loadDailyTaskHistory: (limit?: number) => Promise<DailyTaskHistory[]>;
 
   loadSettings: () => Promise<void>;
@@ -208,16 +208,18 @@ export const useStore = create<Store>((set, get) => ({
 
   completeDailyTask: async (errorWordIds) => {
     try {
-      const { currentStudent, loadDailyTask, loadVocabulary, loadStatistics } = get();
-      if (currentStudent) {
-        await api.dailyTask.complete(currentStudent.id, errorWordIds);
+      const { dailyTask, currentStudent, loadDailyTask, loadVocabulary, loadStatistics } = get();
+      if (dailyTask && currentStudent) {
+        await api.dailyTask.complete(dailyTask.id, errorWordIds, currentStudent.id);
         await loadDailyTask();
         await loadVocabulary();
         await loadStatistics();
+        return get().dailyTask;
       }
     } catch (error) {
       set({ error: '完成任务失败' });
     }
+    return null;
   },
 
   loadDailyTaskHistory: async (limit = 10) => {

@@ -78,8 +78,11 @@ const Daily: React.FC = () => {
   };
 
   const handleSaveErrors = async () => {
-    await completeDailyTask(selectedErrors);
-    setIsComplete(true);
+    const newTask = await completeDailyTask(selectedErrors);
+    if (newTask) {
+      setSelectedErrors(newTask.markedErrorWords || []);
+      setIsComplete(true);
+    }
   };
 
   const handlePrint = async () => {
