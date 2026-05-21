@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
-import { BookOpen, Home, FileText, Users, BarChart3, ChevronDown, Plus, X, Menu, Database } from 'lucide-react';
+import { BookOpen, Home, FileText, Users, BarChart3, ChevronDown, Plus, X, Menu, Database, Settings2 } from 'lucide-react';
 import { Student } from '@/types';
 import { api } from '@/services/api';
 
@@ -57,9 +57,9 @@ const Navbar: React.FC = () => {
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Logo & Current Student */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <BookOpen className="text-orange-500" size={24} />
+              <BookOpen className="text-yellow-500" size={24} />
               <div className="flex flex-col">
-                <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent">
+                <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
                   Daily English
                 </span>
                 {currentStudent && (
@@ -95,7 +95,7 @@ const Navbar: React.FC = () => {
                         key={student.id}
                         onClick={() => handleSelectStudent(student)}
                         className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
-                          currentStudent?.id === student.id ? 'bg-blue-50' : ''
+                          currentStudent?.id === student.id ? 'bg-yellow-50' : ''
                         }`}
                       >
                         <span className="font-medium text-gray-700">{student.name}</span>
@@ -139,7 +139,7 @@ const Navbar: React.FC = () => {
                     href={item.path}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap text-sm ${
                       isActive
-                        ? 'bg-gradient-to-r from-orange-500 to-blue-600 text-white'
+                        ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white'
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -180,13 +180,13 @@ const Navbar: React.FC = () => {
                         onClick={() => handleSelectStudent(student)}
                         className={`w-full px-4 py-3 text-left flex items-center justify-between border-b border-gray-100 last:border-0 ${
                           isActive
-                            ? 'bg-gradient-to-r from-orange-50 to-blue-50 border-l-4 border-l-orange-500'
+                            ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-l-yellow-500'
                             : ''
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           {isActive ? (
-                            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-blue-600 rounded-full flex items-center justify-center">
+                            <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
                               <span className="text-white text-xs font-bold">{student.name.charAt(0)}</span>
                             </div>
                           ) : (
@@ -236,7 +236,7 @@ const Navbar: React.FC = () => {
                     onClick={() => setShowMobileMenu(false)}
                     className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                       isActive
-                        ? 'bg-gradient-to-r from-orange-500 to-blue-600 text-white'
+                        ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white'
                         : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
@@ -273,7 +273,7 @@ const Navbar: React.FC = () => {
                   type="text"
                   value={newStudentName}
                   onChange={(e) => setNewStudentName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   placeholder="请输入学生姓名"
                 />
               </div>
@@ -287,7 +287,7 @@ const Navbar: React.FC = () => {
                 </button>
                 <button
                   onClick={handleAddStudent}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg hover:from-yellow-500 hover:to-orange-600"
                 >
                   添加
                 </button>

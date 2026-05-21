@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import Navbar from '@/components/Navbar';
+import BottomNav from '@/components/BottomNav';
 import Home from '@/pages/Home';
 import Daily from '@/pages/Daily';
 import Vocabulary from '@/pages/Vocabulary';
@@ -33,7 +34,7 @@ function App() {
         </div>
       )}
       <Navbar />
-      <main className="pt-4">
+      <main className="pt-4 pb-20 md:pb-4">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/daily" element={<Daily />} />
@@ -44,6 +45,7 @@ function App() {
           <Route path="/data-migration" element={<DataMigration />} />
         </Routes>
       </main>
+      <BottomNav />
     </div>
   );
 }

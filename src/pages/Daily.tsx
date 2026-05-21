@@ -101,9 +101,9 @@ const Daily: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-white to-yellow-50 flex items-center justify-center">
         <div className="text-center px-4">
-          <RefreshCw className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
+          <RefreshCw className="animate-spin mx-auto mb-4 text-yellow-500" size={48} />
           <p className="text-xl text-gray-600">加载中...</p>
         </div>
       </div>
@@ -112,15 +112,15 @@ const Daily: React.FC = () => {
 
   if (!dailyTask || !dailyTask.id) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-white to-yellow-50 flex items-center justify-center">
         <div className="text-center px-4">
-          <div className="text-orange-500 mb-4" style={{ fontSize: '48px' }}>📚</div>
+          <div className="text-yellow-500 mb-4" style={{ fontSize: '48px' }}>📚</div>
           <p className="text-lg sm:text-xl text-gray-600 mb-4">
             {dailyTask?.message || '暂无今日任务'}
           </p>
           <button
             onClick={handleRegenerate}
-            className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg hover:from-yellow-500 hover:to-orange-600"
           >
             生成今日任务
           </button>
@@ -130,7 +130,7 @@ const Daily: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-white to-yellow-50">
       <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Header Card */}
         <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 mb-4 sm:mb-5">
@@ -162,7 +162,7 @@ const Daily: React.FC = () => {
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-lg hover:from-orange-600 hover:to-blue-700 whitespace-nowrap text-sm"
+              className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg hover:from-yellow-500 hover:to-orange-600 whitespace-nowrap text-sm"
             >
               <Printer size={16} />
               打印
@@ -172,9 +172,9 @@ const Daily: React.FC = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 sm:mb-5">
-          <div className="bg-orange-50 p-2.5 sm:p-3 rounded-lg text-center">
-            <div className="text-xl sm:text-2xl font-bold text-orange-600">{(dailyTask.newWords || []).length}</div>
-            <div className="text-xs text-orange-700">新词</div>
+          <div className="bg-yellow-50 p-2.5 sm:p-3 rounded-lg text-center">
+            <div className="text-xl sm:text-2xl font-bold text-yellow-600">{(dailyTask.newWords || []).length}</div>
+            <div className="text-xs text-yellow-700">新词</div>
           </div>
           <div className="bg-blue-50 p-2.5 sm:p-3 rounded-lg text-center">
             <div className="text-xl sm:text-2xl font-bold text-blue-600">{(dailyTask.reviewedWords || []).length}</div>
@@ -203,7 +203,7 @@ const Daily: React.FC = () => {
                   className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border-2 transition-all ${
                     isError 
                       ? 'border-red-300 bg-red-50' 
-                      : 'border-gray-200 bg-white hover:border-blue-300'
+                      : 'border-gray-200 bg-white hover:border-yellow-300'
                   }`}
                 >
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -214,7 +214,7 @@ const Daily: React.FC = () => {
                       <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                         <span className="text-base sm:text-lg font-semibold text-gray-800 truncate">{word.meaning}</span>
                         {isNew && (
-                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full flex-shrink-0">新词</span>
+                          <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full flex-shrink-0">新词</span>
                         )}
                       </div>
                       <span className="text-xs sm:text-sm text-gray-500 truncate block">{word.word}</span>
@@ -249,7 +249,7 @@ const Daily: React.FC = () => {
             <div className="mt-6 sm:mt-8">
               <button
                 onClick={handleSaveErrors}
-                className="w-full py-3 sm:py-4 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-teal-700 transition-all text-base sm:text-lg"
+                className="w-full py-3 sm:py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-orange-600 transition-all text-base sm:text-lg"
               >
                 保存并完成今日任务
               </button>
