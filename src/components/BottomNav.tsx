@@ -3,9 +3,9 @@ import { BookOpen, BarChart3, Search, User } from 'lucide-react';
 
 const BottomNav: React.FC = () => {
   const navItems = [
-    { path: '/', label: '单词', icon: BookOpen },
+    { path: '/', label: '首页', icon: BookOpen },
     { path: '/statistics', label: '统计', icon: BarChart3 },
-    { path: '/vocabulary', label: '词典', icon: Search },
+    { path: '/vocabulary', label: '词库', icon: Search },
     { path: '/students', label: '我的', icon: User },
   ];
 
