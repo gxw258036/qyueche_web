@@ -36,13 +36,18 @@ router.get('/students', (req, res) => {
 router.post('/students', (req, res) => {
   try {
     const { name, dailyTaskCount } = req.body;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
     const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     db.prepare(`
       INSERT INTO students (id, name, dailyTaskCount, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?)
-    `).run(id, name, dailyTaskCount || 30, today, today);
+    `).run(id, name, dailyTaskCount || 30, localToday, localToday);
 
     res.json({ id, name, dailyTaskCount: dailyTaskCount || 30, message: '学生添加成功' });
   } catch (error: any) {
@@ -58,7 +63,12 @@ router.put('/students/:id', (req, res) => {
   try {
     const { id } = req.params;
     const { name, dailyTaskCount } = req.body;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
 
     const updateFields: string[] = [];
     const params: any[] = [];
@@ -72,7 +82,7 @@ router.put('/students/:id', (req, res) => {
       params.push(dailyTaskCount);
     }
     updateFields.push('updatedAt = ?');
-    params.push(today);
+    params.push(localToday);
     params.push(id);
 
     if (updateFields.length > 0) {
@@ -107,7 +117,12 @@ router.get('/settings', (req, res) => {
 router.put('/settings', (req, res) => {
   try {
     const { currentStudentId, dailyTaskCount } = req.body;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
     
     const updateFields: string[] = [];
     const params: any[] = [];
@@ -121,7 +136,7 @@ router.put('/settings', (req, res) => {
       params.push(dailyTaskCount);
     }
     updateFields.push('updatedAt = ?');
-    params.push(today);
+    params.push(localToday);
     params.push(1);
 
     if (updateFields.length > 0) {
@@ -137,7 +152,12 @@ router.put('/settings', (req, res) => {
 router.post('/settings', (req, res) => {
   try {
     const { currentStudentId, dailyTaskCount } = req.body;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
     
     const updateFields: string[] = [];
     const params: any[] = [];
@@ -151,7 +171,7 @@ router.post('/settings', (req, res) => {
       params.push(dailyTaskCount);
     }
     updateFields.push('updatedAt = ?');
-    params.push(today);
+    params.push(localToday);
     params.push(1);
 
     if (updateFields.length > 0) {
@@ -200,13 +220,18 @@ router.get('/vocabulary', (req, res) => {
 router.post('/vocabulary', (req, res) => {
   try {
     const { word, meaning, status, type, studentId } = req.body;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
     const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     db.prepare(`
       INSERT INTO vocabulary (id, word, meaning, type, studentId, status, correctCount, errorCount, addedAt, isCustom)
       VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 1)
-    `).run(id, word, meaning, type || 'word', studentId, status || 'new', today);
+    `).run(id, word, meaning, type || 'word', studentId, status || 'new', localToday);
 
     res.json({ id, message: '词汇添加成功' });
   } catch (error) {
@@ -218,13 +243,18 @@ router.put('/vocabulary/:id', (req, res) => {
   try {
     const { id } = req.params;
     const { word, meaning, type, status } = req.body;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
 
     db.prepare(`
       UPDATE vocabulary 
       SET word = ?, meaning = ?, type = ?, status = ?, updatedAt = ?
       WHERE id = ?
-    `).run(word, meaning, type || 'word', status, today, id);
+    `).run(word, meaning, type || 'word', status, localToday, id);
 
     res.json({ message: '词汇更新成功' });
   } catch (error) {
@@ -263,7 +293,12 @@ router.post('/vocabulary/bulk', (req, res) => {
   try {
     const words = req.body.words;
     const studentId = req.body.studentId;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
     let count = 0;
 
     const insert = db.prepare(`
@@ -274,7 +309,7 @@ router.post('/vocabulary/bulk', (req, res) => {
     const insertMany = db.transaction((items: any[]) => {
       for (const item of items) {
         const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        insert.run(id, item.word, item.meaning, item.type || 'word', studentId, today);
+        insert.run(id, item.word, item.meaning, item.type || 'word', studentId, localToday);
         count++;
       }
     });
@@ -290,10 +325,15 @@ router.post('/vocabulary/bulk', (req, res) => {
 router.get('/daily-task', (req, res) => {
   try {
     const studentId = req.query.studentId as string;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
 
     const task = db.prepare('SELECT * FROM daily_tasks WHERE date = ? AND studentId = ?')
-      .get(today, studentId) as any;
+      .get(localToday, studentId) as any;
 
     if (task) {
       let newWords: Vocabulary[] = [];
@@ -335,7 +375,12 @@ router.get('/daily-task', (req, res) => {
 router.post('/daily-task/generate', (req, res) => {
   try {
     const { studentId } = req.body;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
 
     let TARGET_COUNT = 30;
     
@@ -433,17 +478,17 @@ router.post('/daily-task/generate', (req, res) => {
 
     db.prepare(`
       DELETE FROM daily_tasks WHERE date = ? AND studentId = ?
-    `).run(today, studentId);
+    `).run(localToday, studentId);
 
     const totalCount = finalNewWords.length + finalReviewedWords.length;
     db.prepare(`
       INSERT INTO daily_tasks (id, date, studentId, completed, markedErrorWords, newWords, reviewedWords, totalCount)
       VALUES (?, ?, ?, 0, '[]', ?, ?, ?)
-    `).run(taskId, today, studentId, JSON.stringify(finalNewWords), JSON.stringify(finalReviewedWords), totalCount);
+    `).run(taskId, localToday, studentId, JSON.stringify(finalNewWords), JSON.stringify(finalReviewedWords), totalCount);
 
     res.json({
       id: taskId,
-      date: today,
+      date: localToday,
       studentId,
       newWords: finalNewWords,
       reviewedWords: finalReviewedWords,
@@ -460,7 +505,12 @@ router.post('/daily-task/generate', (req, res) => {
 router.post('/daily-task/complete', (req, res) => {
   try {
     const { taskId, errorWordIds, studentId } = req.body;
-    const today = new Date().toISOString().split('T')[0];
+    // 获取本地日期而不是 UTC 日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const localToday = `${year}-${month}-${day}`;
     const errorIdsSet = new Set(errorWordIds || []);
 
     const task = db.prepare('SELECT * FROM daily_tasks WHERE id = ?').get(taskId) as any;
@@ -497,7 +547,7 @@ router.post('/daily-task/complete', (req, res) => {
           UPDATE vocabulary
           SET status = 'error', errorCount = errorCount + 1, correctCount = 0, lastReviewedAt = ?, updatedAt = ?
           WHERE id = ?
-        `).run(today, today, id);
+        `).run(localToday, localToday, id);
       }
     });
 
@@ -510,19 +560,19 @@ router.post('/daily-task/complete', (req, res) => {
               UPDATE vocabulary
               SET status = 'mastered', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(today, today, id);
+            `).run(localToday, localToday, id);
           } else if (vocab.status === 'new') {
             db.prepare(`
               UPDATE vocabulary
               SET status = 'reviewed', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(today, today, id);
+            `).run(localToday, localToday, id);
           } else {
             db.prepare(`
               UPDATE vocabulary
               SET correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(today, today, id);
+            `).run(localToday, localToday, id);
           }
         }
       }
@@ -537,14 +587,14 @@ router.post('/daily-task/complete', (req, res) => {
     }
 
     const updateFields: string[] = ['lastStudyDate = ?'];
-    const params: any[] = [today];
+    const params: any[] = [localToday];
 
     if (studentId) {
       updateFields.push('currentStudentId = ?');
       params.push(studentId);
     }
     updateFields.push('updatedAt = ?');
-    params.push(today);
+    params.push(localToday);
     params.push(1);
 
     db.prepare(`UPDATE settings SET ${updateFields.join(', ')} WHERE id = ?`).run(...params);

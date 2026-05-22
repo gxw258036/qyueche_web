@@ -222,8 +222,14 @@ try {
 
 const initSettings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
 if (!initSettings) {
-  const today = new Date().toISOString().split('T')[0];
-  db.prepare('INSERT INTO settings (id, lastStudyDate, dailyTaskCount) VALUES (1, ?, 30)').run(today);
+  // 获取本地日期而不是 UTC 日期
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const localToday = `${year}-${month}-${day}`;
+  
+  db.prepare('INSERT INTO settings (id, lastStudyDate, dailyTaskCount) VALUES (1, ?, 30)').run(localToday);
 }
 
 export default db;
