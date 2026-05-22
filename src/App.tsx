@@ -10,6 +10,10 @@ import Papers from '@/pages/Papers';
 import Statistics from '@/pages/Statistics';
 import Students from '@/pages/Students';
 import DataMigration from '@/pages/DataMigration';
+import ErrorCollection from '@/pages/ErrorCollection';
+import PaperPractice from '@/pages/PaperPractice';
+import GrammarWeakness from '@/pages/GrammarWeakness';
+import GrammarPractice from '@/pages/GrammarPractice';
 
 function App() {
   const { loadSettings, loadStudents, loadVocabulary, loadDailyTask, loadStatistics, error, clearError } = useStore();
@@ -43,6 +47,10 @@ function App() {
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/students" element={<Students />} />
           <Route path="/data-migration" element={<DataMigration />} />
+          <Route path="/error-collection" element={<ErrorCollection />} />
+          <Route path="/paper-practice" element={<PaperPractice />} />
+          <Route path="/grammar-weakness" element={<GrammarWeakness />} />
+          <Route path="/grammar-practice" element={<GrammarPractice />} />
         </Routes>
       </main>
       <BottomNav />

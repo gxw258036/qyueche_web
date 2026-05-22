@@ -839,4 +839,281 @@ router.post('/import', (req, res) => {
   }
 });
 
+function getLocalToday(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+router.get('/error-collections', (req, res) => {
+  try {
+    const studentId = req.query.studentId as string;
+    let query = 'SELECT * FROM error_collections WHERE 1=1';
+    const params: any[] = [];
+
+    if (studentId) {
+      query += ' AND studentId = ?';
+      params.push(studentId);
+    }
+    query += ' ORDER BY createdAt DESC';
+
+    const items = db.prepare(query).all(...params);
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: '获取错题失败' });
+  }
+});
+
+router.post('/error-collections', (req, res) => {
+  try {
+    const { studentId, title, question, answer, imageData, category } = req.body;
+    const localToday = getLocalToday();
+    const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+    db.prepare(`
+      INSERT INTO error_collections (id, studentId, title, question, answer, imageData, category, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, studentId, title, question || '', answer, imageData || null, category || 'general', localToday, localToday);
+
+    res.json({ id, message: '错题添加成功' });
+  } catch (error) {
+    res.status(500).json({ error: '添加错题失败' });
+  }
+});
+
+router.put('/error-collections/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, question, answer, imageData, category } = req.body;
+    const localToday = getLocalToday();
+
+    db.prepare(`
+      UPDATE error_collections
+      SET title = ?, question = ?, answer = ?, imageData = ?, category = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(title, question || '', answer, imageData || null, category, localToday, id);
+
+    res.json({ message: '错题更新成功' });
+  } catch (error) {
+    res.status(500).json({ error: '更新错题失败' });
+  }
+});
+
+router.delete('/error-collections/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    db.prepare('DELETE FROM error_collections WHERE id = ?').run(id);
+    res.json({ message: '错题删除成功' });
+  } catch (error) {
+    res.status(500).json({ error: '删除错题失败' });
+  }
+});
+
+router.get('/paper-practice', (req, res) => {
+  try {
+    const studentId = req.query.studentId as string;
+    const count = parseInt(req.query.count as string) || 10;
+
+    const errors = db.prepare(`
+      SELECT * FROM error_collections
+      WHERE studentId = ?
+      ORDER BY RANDOM()
+      LIMIT ?
+    `).all(studentId, count) as any[];
+
+    const vocabulary = db.prepare(`
+      SELECT * FROM vocabulary
+      WHERE studentId = ? AND status = 'error'
+      ORDER BY RANDOM()
+      LIMIT ?
+    `).all(studentId, Math.max(0, count - errors.length)) as any[];
+
+    res.json({
+      errorCollections: errors,
+      errorVocabulary: vocabulary,
+      totalCount: errors.length + vocabulary.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: '生成试卷失败' });
+  }
+});
+
+router.get('/grammar-weaknesses', (req, res) => {
+  try {
+    const studentId = req.query.studentId as string;
+    let query = 'SELECT * FROM grammar_weaknesses WHERE 1=1';
+    const params: any[] = [];
+
+    if (studentId) {
+      query += ' AND studentId = ?';
+      params.push(studentId);
+    }
+    query += ' ORDER BY createdAt DESC';
+
+    const items = db.prepare(query).all(...params);
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: '获取语法短板失败' });
+  }
+});
+
+router.post('/grammar-weaknesses', (req, res) => {
+  try {
+    const { studentId, title, description, category, example } = req.body;
+    const localToday = getLocalToday();
+    const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+    db.prepare(`
+      INSERT INTO grammar_weaknesses (id, studentId, title, description, category, example, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, studentId, title, description || '', category || 'grammar', example || '', localToday, localToday);
+
+    res.json({ id, message: '语法短板添加成功' });
+  } catch (error) {
+    res.status(500).json({ error: '添加语法短板失败' });
+  }
+});
+
+router.put('/grammar-weaknesses/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, category, example } = req.body;
+    const localToday = getLocalToday();
+
+    db.prepare(`
+      UPDATE grammar_weaknesses
+      SET title = ?, description = ?, category = ?, example = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(title, description || '', category, example || '', localToday, id);
+
+    res.json({ message: '语法短板更新成功' });
+  } catch (error) {
+    res.status(500).json({ error: '更新语法短板失败' });
+  }
+});
+
+router.delete('/grammar-weaknesses/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    db.prepare('DELETE FROM grammar_weaknesses WHERE id = ?').run(id);
+    res.json({ message: '语法短板删除成功' });
+  } catch (error) {
+    res.status(500).json({ error: '删除语法短板失败' });
+  }
+});
+
+router.get('/grammar-questions', (req, res) => {
+  try {
+    const studentId = req.query.studentId as string;
+    const weaknessId = req.query.weaknessId as string;
+    let query = 'SELECT * FROM grammar_questions WHERE 1=1';
+    const params: any[] = [];
+
+    if (studentId) {
+      query += ' AND studentId = ?';
+      params.push(studentId);
+    }
+    if (weaknessId) {
+      query += ' AND weaknessId = ?';
+      params.push(weaknessId);
+    }
+    query += ' ORDER BY createdAt DESC';
+
+    const items = db.prepare(query).all(...params);
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: '获取语法试题失败' });
+  }
+});
+
+router.post('/grammar-questions', (req, res) => {
+  try {
+    const { studentId, weaknessId, question, answer, type, options } = req.body;
+    const localToday = getLocalToday();
+    const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+    db.prepare(`
+      INSERT INTO grammar_questions (id, studentId, weaknessId, question, answer, type, options, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, studentId, weaknessId || null, question, answer, type || 'fill_blank', options || null, localToday, localToday);
+
+    res.json({ id, message: '语法试题添加成功' });
+  } catch (error) {
+    res.status(500).json({ error: '添加语法试题失败' });
+  }
+});
+
+router.put('/grammar-questions/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { question, answer, type, options } = req.body;
+    const localToday = getLocalToday();
+
+    db.prepare(`
+      UPDATE grammar_questions
+      SET question = ?, answer = ?, type = ?, options = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(question, answer, type, options || null, localToday, id);
+
+    res.json({ message: '语法试题更新成功' });
+  } catch (error) {
+    res.status(500).json({ error: '更新语法试题失败' });
+  }
+});
+
+router.delete('/grammar-questions/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    db.prepare('DELETE FROM grammar_questions WHERE id = ?').run(id);
+    res.json({ message: '语法试题删除成功' });
+  } catch (error) {
+    res.status(500).json({ error: '删除语法试题失败' });
+  }
+});
+
+router.get('/grammar-practice', (req, res) => {
+  try {
+    const studentId = req.query.studentId as string;
+    const count = parseInt(req.query.count as string) || 10;
+
+    const weaknesses = db.prepare(`
+      SELECT * FROM grammar_weaknesses WHERE studentId = ?
+    `).all(studentId) as any[];
+
+    if (weaknesses.length === 0) {
+      res.json({ questions: [], weaknesses: [], totalCount: 0 });
+      return;
+    }
+
+    let questions: any[] = [];
+    for (const w of weaknesses) {
+      const qs = db.prepare(`
+        SELECT * FROM grammar_questions WHERE weaknessId = ? ORDER BY RANDOM()
+      `).all(w.id) as any[];
+      questions = questions.concat(qs);
+    }
+
+    if (questions.length === 0) {
+      const qs = db.prepare(`
+        SELECT * FROM grammar_questions WHERE studentId = ? ORDER BY RANDOM() LIMIT ?
+      `).all(studentId, count) as any[];
+      questions = qs;
+    }
+
+    if (questions.length > count) {
+      questions = questions.sort(() => Math.random() - 0.5).slice(0, count);
+    }
+
+    res.json({
+      questions,
+      weaknesses,
+      totalCount: questions.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: '生成语法练习失败' });
+  }
+});
+
 export default router;

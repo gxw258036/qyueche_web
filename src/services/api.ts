@@ -1,4 +1,4 @@
-import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory } from '@/types';
+import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory, ErrorCollection, GrammarWeakness, GrammarQuestion } from '@/types';
 
 const API_BASE = '/api';
 
@@ -118,6 +118,91 @@ export const api = {
       const query = new URLSearchParams();
       if (studentId) query.set('studentId', studentId);
       return fetch(`${API_BASE}/statistics?${query}`).then(res => res.json()) as Promise<Statistics>;
+    }
+  },
+
+  errorCollections: {
+    getAll: (studentId: string) => {
+      const query = new URLSearchParams();
+      if (studentId) query.set('studentId', studentId);
+      return fetch(`${API_BASE}/error-collections?${query}`).then(res => res.json()) as Promise<ErrorCollection[]>;
+    },
+    create: (data: { studentId: string; title: string; question?: string; answer: string; imageData?: string; category?: string }) =>
+      fetch(`${API_BASE}/error-collections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()),
+    update: (id: string, data: { title: string; question?: string; answer: string; imageData?: string; category?: string }) =>
+      fetch(`${API_BASE}/error-collections/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()),
+    delete: (id: string) =>
+      fetch(`${API_BASE}/error-collections/${id}`, { method: 'DELETE' }).then(res => res.json())
+  },
+
+  paperPractice: {
+    get: (studentId: string, count?: number) => {
+      const query = new URLSearchParams();
+      if (studentId) query.set('studentId', studentId);
+      if (count) query.set('count', count.toString());
+      return fetch(`${API_BASE}/paper-practice?${query}`).then(res => res.json());
+    }
+  },
+
+  grammarWeaknesses: {
+    getAll: (studentId: string) => {
+      const query = new URLSearchParams();
+      if (studentId) query.set('studentId', studentId);
+      return fetch(`${API_BASE}/grammar-weaknesses?${query}`).then(res => res.json()) as Promise<GrammarWeakness[]>;
+    },
+    create: (data: { studentId: string; title: string; description?: string; category?: string; example?: string }) =>
+      fetch(`${API_BASE}/grammar-weaknesses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()),
+    update: (id: string, data: { title: string; description?: string; category?: string; example?: string }) =>
+      fetch(`${API_BASE}/grammar-weaknesses/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()),
+    delete: (id: string) =>
+      fetch(`${API_BASE}/grammar-weaknesses/${id}`, { method: 'DELETE' }).then(res => res.json())
+  },
+
+  grammarQuestions: {
+    getAll: (studentId: string, weaknessId?: string) => {
+      const query = new URLSearchParams();
+      if (studentId) query.set('studentId', studentId);
+      if (weaknessId) query.set('weaknessId', weaknessId);
+      return fetch(`${API_BASE}/grammar-questions?${query}`).then(res => res.json()) as Promise<GrammarQuestion[]>;
+    },
+    create: (data: { studentId: string; weaknessId?: string; question: string; answer: string; type?: string; options?: string }) =>
+      fetch(`${API_BASE}/grammar-questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()),
+    update: (id: string, data: { question: string; answer: string; type?: string; options?: string }) =>
+      fetch(`${API_BASE}/grammar-questions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()),
+    delete: (id: string) =>
+      fetch(`${API_BASE}/grammar-questions/${id}`, { method: 'DELETE' }).then(res => res.json())
+  },
+
+  grammarPractice: {
+    get: (studentId: string, count?: number) => {
+      const query = new URLSearchParams();
+      if (studentId) query.set('studentId', studentId);
+      if (count) query.set('count', count.toString());
+      return fetch(`${API_BASE}/grammar-practice?${query}`).then(res => res.json());
     }
   }
 };

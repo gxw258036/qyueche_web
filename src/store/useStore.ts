@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory } from '@/types';
+import { Vocabulary, DailyTask, Settings, Statistics, Student, DailyTaskHistory, ErrorCollection, GrammarWeakness, GrammarQuestion } from '@/types';
 import { api, ExportData } from '@/services/api';
 
 interface Store {
@@ -10,6 +10,9 @@ interface Store {
   dailyTaskHistory: DailyTaskHistory[];
   settings: Settings;
   statistics: Statistics | null;
+  errorCollections: ErrorCollection[];
+  grammarWeaknesses: GrammarWeakness[];
+  grammarQuestions: GrammarQuestion[];
   isLoading: boolean;
   error: string | null;
 
@@ -36,6 +39,21 @@ interface Store {
 
   loadStatistics: () => Promise<void>;
 
+  loadErrorCollections: () => Promise<void>;
+  addErrorCollection: (data: { title: string; question?: string; answer: string; imageData?: string; category?: string }) => Promise<void>;
+  updateErrorCollection: (id: string, data: { title: string; question?: string; answer: string; imageData?: string; category?: string }) => Promise<void>;
+  deleteErrorCollection: (id: string) => Promise<void>;
+
+  loadGrammarWeaknesses: () => Promise<void>;
+  addGrammarWeakness: (data: { title: string; description?: string; category?: string; example?: string }) => Promise<void>;
+  updateGrammarWeakness: (id: string, data: { title: string; description?: string; category?: string; example?: string }) => Promise<void>;
+  deleteGrammarWeakness: (id: string) => Promise<void>;
+
+  loadGrammarQuestions: (weaknessId?: string) => Promise<void>;
+  addGrammarQuestion: (data: { weaknessId?: string; question: string; answer: string; type?: string; options?: string }) => Promise<void>;
+  updateGrammarQuestion: (id: string, data: { question: string; answer: string; type?: string; options?: string }) => Promise<void>;
+  deleteGrammarQuestion: (id: string) => Promise<void>;
+
   exportData: () => Promise<ExportData | null>;
   importData: (data: ExportData) => Promise<void>;
 
@@ -52,6 +70,9 @@ export const useStore = create<Store>((set, get) => ({
   dailyTaskHistory: [],
   settings: { id: 1 },
   statistics: null,
+  errorCollections: [],
+  grammarWeaknesses: [],
+  grammarQuestions: [],
   isLoading: false,
   error: null,
 
@@ -288,6 +309,138 @@ export const useStore = create<Store>((set, get) => ({
       }
     } catch (error) {
       set({ error: '获取统计失败' });
+    }
+  },
+
+  loadErrorCollections: async () => {
+    try {
+      const { currentStudent } = get();
+      if (currentStudent) {
+        const items = await api.errorCollections.getAll(currentStudent.id);
+        set({ errorCollections: items });
+      }
+    } catch (error) {
+      set({ error: '获取错题失败' });
+    }
+  },
+
+  addErrorCollection: async (data) => {
+    try {
+      const { currentStudent } = get();
+      if (!currentStudent) {
+        set({ error: '请先选择学生' });
+        return;
+      }
+      await api.errorCollections.create({ ...data, studentId: currentStudent.id });
+      await get().loadErrorCollections();
+    } catch (error) {
+      set({ error: '添加错题失败' });
+    }
+  },
+
+  updateErrorCollection: async (id, data) => {
+    try {
+      await api.errorCollections.update(id, data);
+      await get().loadErrorCollections();
+    } catch (error) {
+      set({ error: '更新错题失败' });
+    }
+  },
+
+  deleteErrorCollection: async (id) => {
+    try {
+      await api.errorCollections.delete(id);
+      await get().loadErrorCollections();
+    } catch (error) {
+      set({ error: '删除错题失败' });
+    }
+  },
+
+  loadGrammarWeaknesses: async () => {
+    try {
+      const { currentStudent } = get();
+      if (currentStudent) {
+        const items = await api.grammarWeaknesses.getAll(currentStudent.id);
+        set({ grammarWeaknesses: items });
+      }
+    } catch (error) {
+      set({ error: '获取语法短板失败' });
+    }
+  },
+
+  addGrammarWeakness: async (data) => {
+    try {
+      const { currentStudent } = get();
+      if (!currentStudent) {
+        set({ error: '请先选择学生' });
+        return;
+      }
+      await api.grammarWeaknesses.create({ ...data, studentId: currentStudent.id });
+      await get().loadGrammarWeaknesses();
+    } catch (error) {
+      set({ error: '添加语法短板失败' });
+    }
+  },
+
+  updateGrammarWeakness: async (id, data) => {
+    try {
+      await api.grammarWeaknesses.update(id, data);
+      await get().loadGrammarWeaknesses();
+    } catch (error) {
+      set({ error: '更新语法短板失败' });
+    }
+  },
+
+  deleteGrammarWeakness: async (id) => {
+    try {
+      await api.grammarWeaknesses.delete(id);
+      await get().loadGrammarWeaknesses();
+    } catch (error) {
+      set({ error: '删除语法短板失败' });
+    }
+  },
+
+  loadGrammarQuestions: async (weaknessId) => {
+    try {
+      const { currentStudent } = get();
+      if (currentStudent) {
+        const items = await api.grammarQuestions.getAll(currentStudent.id, weaknessId);
+        set({ grammarQuestions: items });
+      }
+    } catch (error) {
+      set({ error: '获取语法试题失败' });
+    }
+  },
+
+  addGrammarQuestion: async (data) => {
+    try {
+      const { currentStudent } = get();
+      if (!currentStudent) {
+        set({ error: '请先选择学生' });
+        return;
+      }
+      await api.grammarQuestions.create({ ...data, studentId: currentStudent.id });
+      await get().loadGrammarQuestions();
+    } catch (error) {
+      set({ error: '添加语法试题失败' });
+    }
+  },
+
+  updateGrammarQuestion: async (id, data) => {
+    try {
+      await api.grammarQuestions.update(id, data);
+      await get().loadGrammarQuestions();
+    } catch (error) {
+      set({ error: '更新语法试题失败' });
+    }
+  },
+
+  deleteGrammarQuestion: async (id) => {
+    try {
+      await api.grammarQuestions.delete(id);
+      await get().loadGrammarQuestions();
+    } catch (error) {
+      set({ error: '删除语法试题失败' });
     }
   },
 

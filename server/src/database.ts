@@ -60,11 +60,55 @@ db.exec(`
     FOREIGN KEY (currentStudentId) REFERENCES students(id) ON DELETE SET NULL
   );
 
+  CREATE TABLE IF NOT EXISTS error_collections (
+    id TEXT PRIMARY KEY,
+    studentId TEXT NOT NULL,
+    title TEXT NOT NULL,
+    question TEXT,
+    answer TEXT NOT NULL,
+    imageData TEXT,
+    category TEXT DEFAULT 'general',
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS grammar_weaknesses (
+    id TEXT PRIMARY KEY,
+    studentId TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    category TEXT DEFAULT 'grammar',
+    example TEXT,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS grammar_questions (
+    id TEXT PRIMARY KEY,
+    studentId TEXT NOT NULL,
+    weaknessId TEXT,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    type TEXT DEFAULT 'fill_blank',
+    options TEXT,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (weaknessId) REFERENCES grammar_weaknesses(id) ON DELETE SET NULL
+  );
+
   CREATE INDEX IF NOT EXISTS idx_students_name ON students(name);
   CREATE INDEX IF NOT EXISTS idx_vocabulary_status ON vocabulary(status);
   CREATE INDEX IF NOT EXISTS idx_vocabulary_studentId ON vocabulary(studentId);
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_date ON daily_tasks(date);
   CREATE INDEX IF NOT EXISTS idx_daily_tasks_studentId ON daily_tasks(studentId);
+
+  CREATE INDEX IF NOT EXISTS idx_error_collections_studentId ON error_collections(studentId);
+  CREATE INDEX IF NOT EXISTS idx_grammar_weaknesses_studentId ON grammar_weaknesses(studentId);
+  CREATE INDEX IF NOT EXISTS idx_grammar_questions_studentId ON grammar_questions(studentId);
+  CREATE INDEX IF NOT EXISTS idx_grammar_questions_weaknessId ON grammar_questions(weaknessId);
 `);
 
 // 数据库迁移：移除旧的 grade 字段
