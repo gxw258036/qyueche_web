@@ -181,9 +181,23 @@ export const useStore = create<Store>((set, get) => ({
 
   loadDailyTask: async () => {
     try {
-      const { currentStudent } = get();
+      const { currentStudent, generateDailyTask } = get();
       if (currentStudent) {
         const task = await api.dailyTask.get(currentStudent.id);
+        
+        // 获取本地日期而不是 UTC 日期
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const localToday = `${year}-${month}-${day}`;
+        
+        // 如果任务存在但不是今天的，或者任务不存在，都需要重新生成
+        if (task && task.date !== localToday) {
+          await generateDailyTask();
+          return get().dailyTask;
+        }
+        
         set({ dailyTask: task });
         return task;
       }
