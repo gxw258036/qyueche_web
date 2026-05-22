@@ -92,7 +92,6 @@ const Vocabulary: React.FC = () => {
     if (window.confirm(`确定要删除选中的 ${selectedIds.size} 个词汇吗？`)) {
       await bulkDeleteVocabulary(Array.from(selectedIds));
       setSelectedIds(new Set());
-      setSelectAll(false);
     }
   };
 
