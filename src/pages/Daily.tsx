@@ -166,7 +166,7 @@ const Daily: React.FC = () => {
               历史
             </button>
             <button
-              onClick={handleRegenerate}
+              onClick={() => handleRegenerate(false)}
               className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 whitespace-nowrap text-sm"
             >
               <RefreshCw size={16} />
