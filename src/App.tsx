@@ -16,8 +16,8 @@ function App() {
 
   useEffect(() => {
     const init = async () => {
-      await loadStudents();
       await loadSettings();
+      await loadStudents();
       await loadVocabulary();
       await loadDailyTask();
       await loadStatistics();

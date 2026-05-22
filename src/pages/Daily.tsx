@@ -11,7 +11,6 @@ const Daily: React.FC = () => {
     generateDailyTask,
     completeDailyTask,
     loadDailyTask,
-    currentStudent,
   } = useStore();
   
   const [selectedErrors, setSelectedErrors] = useState<string[]>([]);
@@ -92,19 +91,8 @@ const Daily: React.FC = () => {
     }
   };
 
-  const handleRegenerate = async (skipConfirm = false) => {
-    console.log('点击生成任务按钮');
-    console.log('当前学生:', currentStudent);
-    
-    if (!currentStudent) {
-      alert('请先选择一个学生！');
-      return;
-    }
-    
-    const shouldGenerate = skipConfirm || window.confirm('确定要重新生成今日任务吗？');
-    
-    if (shouldGenerate) {
-      console.log('用户确认生成任务');
+  const handleRegenerate = async () => {
+    if (window.confirm('确定要重新生成今日任务吗？')) {
       await generateDailyTask();
       setSelectedErrors([]);
       setIsComplete(false);
@@ -131,7 +119,7 @@ const Daily: React.FC = () => {
             {dailyTask?.message || '暂无今日任务'}
           </p>
           <button
-            onClick={() => handleRegenerate(true)}
+            onClick={handleRegenerate}
             className="px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg hover:from-yellow-500 hover:to-orange-600"
           >
             生成今日任务
@@ -166,7 +154,7 @@ const Daily: React.FC = () => {
               历史
             </button>
             <button
-              onClick={() => handleRegenerate(false)}
+              onClick={handleRegenerate}
               className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 whitespace-nowrap text-sm"
             >
               <RefreshCw size={16} />

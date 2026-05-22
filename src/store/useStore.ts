@@ -211,19 +211,12 @@ export const useStore = create<Store>((set, get) => ({
   generateDailyTask: async () => {
     try {
       const { currentStudent, loadDailyTask } = get();
-      
-      if (!currentStudent) {
-        set({ error: '请先选择一个学生' });
-        return;
+      if (currentStudent) {
+        await api.dailyTask.generate(currentStudent.id);
+        await loadDailyTask();
       }
-      
-      console.log('开始生成每日任务，学生ID:', currentStudent.id);
-      await api.dailyTask.generate(currentStudent.id);
-      console.log('任务生成成功，开始加载新任务');
-      await loadDailyTask();
     } catch (error) {
-      console.error('生成每日任务失败:', error);
-      set({ error: '生成每日任务失败: ' + (error as Error).message });
+      set({ error: '生成每日任务失败' });
     }
   },
 
