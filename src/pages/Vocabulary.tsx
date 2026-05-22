@@ -35,7 +35,6 @@ const Vocabulary: React.FC = () => {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -53,22 +52,36 @@ const Vocabulary: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  useEffect(() => {
-    if (selectAll) {
-      setSelectedIds(new Set(filteredVocabulary.map(w => w.id)));
-    } else {
-      setSelectedIds(new Set());
-    }
-  }, [selectAll, filteredVocabulary]);
+  const selectAll = filteredVocabulary.length > 0 && 
+    filteredVocabulary.every(word => selectedIds.has(word.id));
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (id: string, event?: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('toggleSelect called, id:', id);
+    console.log('event:', event);
+    console.log('current selectedIds size:', selectedIds.size);
+    
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
       newSelected.delete(id);
     } else {
       newSelected.add(id);
     }
+    
+    console.log('new selectedIds size:', newSelected.size);
     setSelectedIds(newSelected);
+    
+    // 阻止事件冒泡
+    if (event) {
+      event.stopPropagation();
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredVocabulary.map(w => w.id)));
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -267,16 +280,13 @@ const Vocabulary: React.FC = () => {
               type="checkbox"
               id="selectAll"
               checked={selectAll}
-              onChange={(e) => setSelectAll(e.target.checked)}
+              onChange={handleSelectAll}
               className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
             />
             <label htmlFor="selectAll" className="text-gray-700 text-sm">全选</label>
             {selectedIds.size > 0 && (
               <button
-                onClick={() => {
-                  setSelectedIds(new Set());
-                  setSelectAll(false);
-                }}
+                onClick={() => setSelectedIds(new Set())}
                 className="ml-auto text-gray-500 hover:text-gray-700 p-1"
               >
                 <X size={16} />
@@ -301,7 +311,7 @@ const Vocabulary: React.FC = () => {
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => toggleSelect(word.id)}
+                      onChange={(e) => toggleSelect(word.id, e)}
                       className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 flex-shrink-0 mt-1 sm:mt-0"
                     />
                     <div className="min-w-0 flex-1">
