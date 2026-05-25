@@ -220,12 +220,21 @@ router.get('/vocabulary', (req, res) => {
 router.post('/vocabulary', (req, res) => {
   try {
     const { word, meaning, status, type, studentId } = req.body;
-    // 获取本地日期而不是 UTC 日期
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const localToday = `${year}-${month}-${day}`;
+
+    const existing = db.prepare(`
+      SELECT id FROM vocabulary WHERE LOWER(word) = LOWER(?) AND studentId = ?
+    `).get(word, studentId);
+
+    if (existing) {
+      res.json({ message: '该词汇已存在，已自动跳过', skipped: true });
+      return;
+    }
+
     const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     db.prepare(`
@@ -293,32 +302,71 @@ router.post('/vocabulary/bulk', (req, res) => {
   try {
     const words = req.body.words;
     const studentId = req.body.studentId;
-    // 获取本地日期而不是 UTC 日期
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const localToday = `${year}-${month}-${day}`;
-    let count = 0;
+    let importedCount = 0;
+    let skippedCount = 0;
+
+    const existingWords = db.prepare(`
+      SELECT word FROM vocabulary WHERE studentId = ?
+    `).all(studentId) as { word: string }[];
+
+    const existingWordSet = new Set(existingWords.map(w => w.word.toLowerCase().trim()));
 
     const insert = db.prepare(`
       INSERT INTO vocabulary (id, word, meaning, type, studentId, status, correctCount, errorCount, addedAt, isCustom)
-      VALUES (?, ?, ?, ?, ?, 'reviewed', 0, 0, ?, 1)
+      VALUES (?, ?, ?, ?, ?, 'new', 0, 0, ?, 1)
     `);
 
     const insertMany = db.transaction((items: any[]) => {
       for (const item of items) {
+        const normalizedWord = item.word.toLowerCase().trim();
+        if (existingWordSet.has(normalizedWord)) {
+          skippedCount++;
+          continue;
+        }
         const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         insert.run(id, item.word, item.meaning, item.type || 'word', studentId, localToday);
-        count++;
+        importedCount++;
+        existingWordSet.add(normalizedWord);
       }
     });
 
     insertMany(words);
-    res.json({ message: '成功导入 ' + count + ' 个词汇' });
+
+    let message = `成功导入 ${importedCount} 个词汇`;
+    if (skippedCount > 0) {
+      message += `，${skippedCount} 个重复词汇已自动跳过`;
+    }
+
+    res.json({ message, importedCount, skippedCount });
   } catch (error) {
     console.error('批量导入错误:', error);
     res.status(500).json({ error: '批量导入失败' });
+  }
+});
+
+router.post('/vocabulary/reset-to-new', (req, res) => {
+  try {
+    const { studentId } = req.body;
+    if (!studentId) {
+      res.status(400).json({ error: '请提供学生ID' });
+      return;
+    }
+
+    const result = db.prepare(`
+      UPDATE vocabulary
+      SET status = 'new', correctCount = 0, errorCount = 0, lastReviewedAt = NULL, updatedAt = ?
+      WHERE studentId = ?
+    `).run(getLocalToday(), studentId);
+
+    res.json({ message: `已更新 ${result.changes} 个词汇为"新词"`, updatedCount: result.changes });
+  } catch (error) {
+    console.error('重置词汇状态失败:', error);
+    res.status(500).json({ error: '重置词汇状态失败' });
   }
 });
 

@@ -1,7 +1,7 @@
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { Calendar, Book, CheckCircle, AlertCircle, Settings2, User, Sparkles, Trophy, Target } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -223,52 +223,52 @@ const Home = () => {
         {/* Feature Cards */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <button
-            onClick={() => navigate('/daily')}
-            className="bg-blue-50 rounded-xl p-4 sm:p-5 text-left hover:bg-blue-100 transition-colors"
+            onClick={() => navigate('/error-collection')}
+            className="bg-red-50 rounded-xl p-4 sm:p-5 text-left hover:bg-red-100 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
-              <span className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span className="text-blue-600 text-lg">👂</span>
+              <span className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <AlertCircle className="text-red-600" size={20} />
               </span>
-              <span className="text-blue-600 font-semibold">听</span>
+              <span className="text-red-600 font-semibold">错题</span>
             </div>
-            <div className="text-gray-700 text-sm">听力训练</div>
+            <div className="text-gray-700 text-sm">错题巩固</div>
           </button>
           <button
-            onClick={() => navigate('/vocabulary')}
-            className="bg-purple-50 rounded-xl p-4 sm:p-5 text-left hover:bg-purple-100 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                <span className="text-purple-600 text-lg">💬</span>
-              </span>
-              <span className="text-purple-600 font-semibold">说</span>
-            </div>
-            <div className="text-gray-700 text-sm">跟读对比</div>
-          </button>
-          <button
-            onClick={() => navigate('/vocabulary')}
+            onClick={() => navigate('/paper-practice')}
             className="bg-orange-50 rounded-xl p-4 sm:p-5 text-left hover:bg-orange-100 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
               <span className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                <span className="text-orange-600 text-lg">📖</span>
+                <Target className="text-orange-600" size={20} />
               </span>
-              <span className="text-orange-600 font-semibold">读</span>
+              <span className="text-orange-600 font-semibold">精练</span>
             </div>
-            <div className="text-gray-700 text-sm">释义巩固</div>
+            <div className="text-gray-700 text-sm">重点精练</div>
           </button>
           <button
-            onClick={() => navigate('/daily')}
+            onClick={() => navigate('/grammar-weakness')}
+            className="bg-blue-50 rounded-xl p-4 sm:p-5 text-left hover:bg-blue-100 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Book className="text-blue-600" size={20} />
+              </span>
+              <span className="text-blue-600 font-semibold">语法</span>
+            </div>
+            <div className="text-gray-700 text-sm">语法练习</div>
+          </button>
+          <button
+            onClick={() => navigate('/grammar-practice')}
             className="bg-green-50 rounded-xl p-4 sm:p-5 text-left hover:bg-green-100 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
               <span className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-green-600 text-lg">✍️</span>
+                <CheckCircle className="text-green-600" size={20} />
               </span>
-              <span className="text-green-600 font-semibold">写</span>
+              <span className="text-green-600 font-semibold">刷题</span>
             </div>
-            <div className="text-gray-700 text-sm">拼写练习</div>
+            <div className="text-gray-700 text-sm">刷题挑战</div>
           </button>
         </div>
 

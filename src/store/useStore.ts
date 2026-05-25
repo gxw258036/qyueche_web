@@ -28,6 +28,7 @@ interface Store {
   deleteVocabulary: (id: string) => Promise<void>;
   bulkDeleteVocabulary: (ids: string[]) => Promise<void>;
   bulkAddVocabulary: (words: { word: string; meaning: string; type?: string }[], studentId?: string) => Promise<void>;
+  resetVocabularyToNew: () => Promise<void>;
 
   loadDailyTask: () => Promise<DailyTask | null>;
   generateDailyTask: () => Promise<void>;
@@ -126,6 +127,10 @@ export const useStore = create<Store>((set, get) => ({
       return;
     }
     set({ currentStudent: student });
+    try {
+      await api.settings.update({ currentStudentId: student.id });
+      set({ settings: { ...get().settings, currentStudentId: student.id } });
+    } catch (_) {}
     await get().loadVocabulary(student.id);
     await get().loadDailyTask();
     await get().loadStatistics();
@@ -197,6 +202,21 @@ export const useStore = create<Store>((set, get) => ({
       await get().loadVocabulary();
     } catch (error) {
       set({ error: '批量添加词汇失败' });
+    }
+  },
+
+  resetVocabularyToNew: async () => {
+    try {
+      const { currentStudent, loadVocabulary } = get();
+      if (!currentStudent) {
+        set({ error: '请先选择学生' });
+        return;
+      }
+      const result = await api.vocabulary.resetToNew(currentStudent.id);
+      await loadVocabulary();
+      return result;
+    } catch (error) {
+      set({ error: '重置词汇状态失败' });
     }
   },
 
@@ -327,7 +347,7 @@ export const useStore = create<Store>((set, get) => ({
   addErrorCollection: async (data) => {
     try {
       const { currentStudent } = get();
-      if (!currentStudent) {
+if (!currentStudent) {
         set({ error: '请先选择学生' });
         return;
       }
@@ -371,7 +391,7 @@ export const useStore = create<Store>((set, get) => ({
   addGrammarWeakness: async (data) => {
     try {
       const { currentStudent } = get();
-      if (!currentStudent) {
+if (!currentStudent) {
         set({ error: '请先选择学生' });
         return;
       }
@@ -415,7 +435,7 @@ export const useStore = create<Store>((set, get) => ({
   addGrammarQuestion: async (data) => {
     try {
       const { currentStudent } = get();
-      if (!currentStudent) {
+if (!currentStudent) {
         set({ error: '请先选择学生' });
         return;
       }

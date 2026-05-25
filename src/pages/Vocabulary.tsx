@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { Plus, Edit, Trash2, Search, Filter, BookOpen, CheckCircle2, XCircle, Clock, X, User } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Filter, BookOpen, CheckCircle2, XCircle, Clock, X, User, RefreshCw } from 'lucide-react';
 import { Vocabulary as VocabularyType } from '@/types';
 
 const Vocabulary: React.FC = () => {
@@ -12,6 +12,7 @@ const Vocabulary: React.FC = () => {
     deleteVocabulary,
     bulkDeleteVocabulary,
     bulkAddVocabulary,
+    resetVocabularyToNew,
     currentStudent,
     students,
   } = useStore();
@@ -149,10 +150,21 @@ const Vocabulary: React.FC = () => {
     });
     
     if (words.length > 0) {
-      await bulkAddVocabulary(words);
-      alert(`成功导入 ${words.length} 个词汇！`);
+      const result = await bulkAddVocabulary(words) as any;
+      if (result?.importedCount !== undefined) {
+        alert(`成功导入 ${result.importedCount} 个词汇${result.skippedCount ? `，${result.skippedCount} 个重复词汇已自动跳过` : ''}`);
+      } else {
+        alert(`成功导入 ${words.length} 个词汇！`);
+      }
       setBulkInput('');
       setShowBulkModal(false);
+    }
+  };
+
+  const handleResetToNew = async () => {
+    if (window.confirm('确定要将所有词汇重置为"新词"状态吗？这将清除所有学习记录和进度。')) {
+      await resetVocabularyToNew();
+      alert('已将所有词汇重置为"新词"状态');
     }
   };
 
@@ -226,6 +238,13 @@ const Vocabulary: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
               >
                 批量导入
+              </button>
+              <button
+                onClick={handleResetToNew}
+                className="flex items-center gap-1.5 px-3 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 text-sm"
+              >
+                <RefreshCw size={16} />
+                重置为新词
               </button>
               <button
                 onClick={handleBulkDelete}

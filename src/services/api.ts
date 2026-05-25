@@ -84,6 +84,12 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ words, studentId })
+      }).then(res => res.json()),
+    resetToNew: (studentId: string) =>
+      fetch(`${API_BASE}/vocabulary/reset-to-new`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId })
       }).then(res => res.json())
   },
 
