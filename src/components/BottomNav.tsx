@@ -1,13 +1,9 @@
 import React from 'react';
-import { BookOpen, BarChart3, Search, User, Camera, FileText, AlertCircle, PenLine } from 'lucide-react';
+import { BookOpen, BarChart3, Search, User } from 'lucide-react';
 
 const BottomNav: React.FC = () => {
   const navItems = [
     { path: '/', label: '首页', icon: BookOpen },
-    { path: '/error-collection', label: '错题', icon: Camera },
-    { path: '/paper-practice', label: '精练', icon: FileText },
-    { path: '/grammar-weakness', label: '语法', icon: AlertCircle },
-    { path: '/grammar-practice', label: '刷题', icon: PenLine },
     { path: '/statistics', label: '统计', icon: BarChart3 },
     { path: '/vocabulary', label: '词库', icon: Search },
     { path: '/students', label: '我的', icon: User },
