@@ -454,9 +454,9 @@ router.post('/daily-task/generate', (req, res) => {
       ORDER BY 
         CASE status 
           WHEN 'error' THEN 1 
-          WHEN 'new' THEN 2 
-          WHEN 'reviewed' THEN 3 
-          WHEN 'mastered' THEN 4 
+          WHEN 'reviewed' THEN 2 
+          WHEN 'mastered' THEN 3 
+          WHEN 'new' THEN 4 
         END,
         RANDOM()
     `).all(studentId);
