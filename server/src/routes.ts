@@ -483,13 +483,10 @@ router.post('/daily-task/generate', (req, res) => {
       const v = vocab as Vocabulary;
       if (usedIds.has(v.id)) continue;
       
-      if (v.status === 'new' && newWordsList.length < 10) {
-        newWordsList.push(v);
-        usedIds.add(v.id);
-      } else if (v.status === 'error' || v.status === 'reviewed' || v.status === 'mastered') {
+      if ((v.status === 'error' || v.status === 'reviewed' || v.status === 'mastered') && reviewedWordsList.length < 5) {
         reviewedWordsList.push(v);
         usedIds.add(v.id);
-      } else if (newWordsList.length < TARGET_COUNT && usedIds.size < allVocabulary.length) {
+      } else if (v.status === 'new') {
         newWordsList.push(v);
         usedIds.add(v.id);
       }
