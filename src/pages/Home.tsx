@@ -167,11 +167,11 @@ const Home = () => {
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4 sm:mb-6">
               <div className="bg-white/20 rounded-xl p-3 sm:p-4 text-center">
-                <div className="text-2xl sm:text-3xl font-bold">{Math.floor(dailyTaskCount / 3)}</div>
+                <div className="text-2xl sm:text-3xl font-bold">{Math.ceil(dailyTaskCount * 2 / 3)}</div>
                 <div className="text-sm text-white/80">新词</div>
               </div>
               <div className="bg-white/20 rounded-xl p-3 sm:p-4 text-center">
-                <div className="text-2xl sm:text-3xl font-bold">{Math.ceil(dailyTaskCount * 2 / 3)}</div>
+                <div className="text-2xl sm:text-3xl font-bold">{Math.floor(dailyTaskCount / 3)}</div>
                 <div className="text-sm text-white/80">复习</div>
               </div>
             </div>

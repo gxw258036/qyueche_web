@@ -479,11 +479,13 @@ router.post('/daily-task/generate', (req, res) => {
     const reviewedWordsList: any[] = [];
     const usedIds = new Set<string>();
 
+    const REVIEW_CAP = Math.max(5, Math.floor(TARGET_COUNT / 3));
+
     for (const vocab of allVocabulary) {
       const v = vocab as Vocabulary;
       if (usedIds.has(v.id)) continue;
       
-      if ((v.status === 'error' || v.status === 'reviewed' || v.status === 'mastered') && reviewedWordsList.length < 5) {
+      if ((v.status === 'error' || v.status === 'reviewed' || v.status === 'mastered') && reviewedWordsList.length < REVIEW_CAP) {
         reviewedWordsList.push(v);
         usedIds.add(v.id);
       } else if (v.status === 'new') {
