@@ -7,11 +7,11 @@ export const generatePDF = async (words: Vocabulary[], showAnswers: boolean, stu
   const nameStr = studentName ? `_${studentName}` : '';
   const dateStr = `_${today.replace(/\//g, '-')}`;
   const fileName = `英语默写练习${nameStr}${dateStr}.pdf`;
-  const titleStr = studentName ? `英语默写练习_${studentName}` : '英语默写练习';
+  const titleNameDateStr = studentName ? `英语默写练习_${studentName}_${today}` : '英语默写练习';
   const wordsPerColumn = Math.ceil(words.length / 2);
   const column1Words = words.slice(0, wordsPerColumn);
   const column2Words = words.slice(wordsPerColumn);
-  
+
   const generateColumnHTML = (columnWords: Vocabulary[], startIndex: number) => {
     return columnWords.map((word, index) => {
       const actualIndex = startIndex + index;
@@ -34,8 +34,7 @@ export const generatePDF = async (words: Vocabulary[], showAnswers: boolean, stu
   container.innerHTML = `
     <div style="width: 210mm; padding: 10mm; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
       <div style="text-align: center; margin-bottom: 15px;">
-        <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">${titleStr}</div>
-        <div style="color: #6b7280; font-size: 11px;">${today}</div>
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">${titleNameDateStr}</div>
       </div>
       <div style="display: flex; gap: 15px;">
         <div style="flex: 1;">${generateColumnHTML(column1Words, 0)}</div>
@@ -43,23 +42,23 @@ export const generatePDF = async (words: Vocabulary[], showAnswers: boolean, stu
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(container);
-  
+
   try {
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
       logging: false,
     });
-    
+
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
     });
-    
+
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const imgWidth = canvas.width;
@@ -67,7 +66,7 @@ export const generatePDF = async (words: Vocabulary[], showAnswers: boolean, stu
     const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
     const imgX = (pdfWidth - imgWidth * ratio) / 2;
     const imgY = (pdfHeight - imgHeight * ratio) / 2;
-    
+
     pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
     pdf.save(fileName);
   } finally {
@@ -80,13 +79,13 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean, stud
   if (!printWindow) return;
 
   const today = date || new Date().toLocaleDateString('zh-CN');
-  const titleStr = studentName ? `英语默写练习_${studentName}` : '英语默写练习';
+  const titleNameDateStr = studentName ? `英语默写练习_${studentName}_${today}` : '英语默写练习';
 
   const wordsPerColumn = Math.ceil(words.length / 2);
-  
+
   const column1Words = words.slice(0, wordsPerColumn);
   const column2Words = words.slice(wordsPerColumn);
-  
+
   const generateColumnHTML = (columnWords: Vocabulary[], startIndex: number) => {
     return columnWords.map((word, index) => {
       const actualIndex = startIndex + index;
@@ -109,7 +108,7 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean, stud
     <!DOCTYPE html>
     <html>
       <head>
-        <title>${titleStr}</title>
+        <title>${titleNameDateStr}</title>
         <style>
           @page {
             size: A4;
@@ -161,8 +160,7 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean, stud
       <body>
         <div class="content">
           <div class="header">
-            <div class="title">${titleStr}</div>
-            <div class="date">${today}</div>
+            <div class="title">${titleNameDateStr}</div>
           </div>
           <div class="columns">
             <div class="column">${generateColumnHTML(column1Words, 0)}</div>
@@ -175,7 +173,7 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean, stud
 
   printWindow.document.close();
   printWindow.focus();
-  
+
   setTimeout(() => {
     printWindow.print();
   }, 250);
