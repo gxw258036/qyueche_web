@@ -2,7 +2,12 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Vocabulary } from '@/types';
 
-export const generatePDF = async (words: Vocabulary[], showAnswers: boolean) => {
+export const generatePDF = async (words: Vocabulary[], showAnswers: boolean, studentName?: string, date?: string) => {
+  const today = date || new Date().toLocaleDateString('zh-CN');
+  const nameStr = studentName ? `_${studentName}` : '';
+  const dateStr = `_${today.replace(/\//g, '-')}`;
+  const fileName = `英语默写练习${nameStr}${dateStr}.pdf`;
+  const titleStr = studentName ? `英语默写练习_${studentName}` : '英语默写练习';
   const wordsPerColumn = Math.ceil(words.length / 2);
   const column1Words = words.slice(0, wordsPerColumn);
   const column2Words = words.slice(wordsPerColumn);
@@ -29,8 +34,8 @@ export const generatePDF = async (words: Vocabulary[], showAnswers: boolean) => 
   container.innerHTML = `
     <div style="width: 210mm; padding: 10mm; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
       <div style="text-align: center; margin-bottom: 15px;">
-        <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">英语默写练习</div>
-        <div style="color: #6b7280; font-size: 11px;">${new Date().toLocaleDateString('zh-CN')}</div>
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">${titleStr}</div>
+        <div style="color: #6b7280; font-size: 11px;">${today}</div>
       </div>
       <div style="display: flex; gap: 15px;">
         <div style="flex: 1;">${generateColumnHTML(column1Words, 0)}</div>
@@ -64,15 +69,18 @@ export const generatePDF = async (words: Vocabulary[], showAnswers: boolean) => 
     const imgY = (pdfHeight - imgHeight * ratio) / 2;
     
     pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-    pdf.save('english-vocabulary-practice.pdf');
+    pdf.save(fileName);
   } finally {
     document.body.removeChild(container);
   }
 };
 
-export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
+export const printPaper = async (words: Vocabulary[], showAnswers: boolean, studentName?: string, date?: string) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
+
+  const today = date || new Date().toLocaleDateString('zh-CN');
+  const titleStr = studentName ? `英语默写练习_${studentName}` : '英语默写练习';
 
   const wordsPerColumn = Math.ceil(words.length / 2);
   
@@ -101,7 +109,7 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>英语默写练习</title>
+        <title>${titleStr}</title>
         <style>
           @page {
             size: A4;
@@ -153,8 +161,8 @@ export const printPaper = async (words: Vocabulary[], showAnswers: boolean) => {
       <body>
         <div class="content">
           <div class="header">
-            <div class="title">英语默写练习</div>
-            <div class="date">${new Date().toLocaleDateString('zh-CN')}</div>
+            <div class="title">${titleStr}</div>
+            <div class="date">${today}</div>
           </div>
           <div class="columns">
             <div class="column">${generateColumnHTML(column1Words, 0)}</div>

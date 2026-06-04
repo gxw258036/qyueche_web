@@ -5,7 +5,7 @@ import { Vocabulary } from '@/types';
 import { printPaper } from '@/utils/pdf';
 
 const Papers: React.FC = () => {
-  const { loadVocabulary, vocabulary } = useStore();
+  const { loadVocabulary, vocabulary, currentStudent } = useStore();
   const [loading, setLoading] = useState(true);
   const [paperConfig, setPaperConfig] = useState({
     newWordsCount: 5,
@@ -31,7 +31,8 @@ const Papers: React.FC = () => {
   const handlePrint = async () => {
     const words = getWordsForPaper();
     if (words.length > 0) {
-      await printPaper(words, false);
+      const today = new Date().toLocaleDateString('zh-CN');
+      await printPaper(words, false, currentStudent?.name, today);
     } else {
       alert('没有可打印的词汇');
     }
