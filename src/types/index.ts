@@ -23,11 +23,15 @@ export interface Vocabulary {
   meaning: string;
   studentId: string;
   type: 'word' | 'phrase' | 'sentence';
-  status: 'new' | 'reviewed' | 'mastered' | 'error';
+  status: 'new' | 'old' | 'review' | 'mastered';
   correctCount: number;
   errorCount: number;
+  consecutiveCorrectCount: number;
   addedAt: string;
   lastReviewedAt?: string;
+  lastErrorDate?: string;
+  becomeMasteredAt?: string;
+  lastAppearedDate?: string;
   isCustom: number;
   createdAt?: string;
   updatedAt?: string;

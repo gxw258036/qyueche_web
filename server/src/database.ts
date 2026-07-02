@@ -23,11 +23,15 @@ db.exec(`
     meaning TEXT NOT NULL,
     studentId TEXT NOT NULL,
     type TEXT NOT NULL DEFAULT 'word' CHECK(type IN ('word', 'phrase', 'sentence')),
-    status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'reviewed', 'mastered', 'error')),
+    status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'old', 'review', 'mastered')),
     correctCount INTEGER DEFAULT 0,
     errorCount INTEGER DEFAULT 0,
+    consecutiveCorrectCount INTEGER DEFAULT 0,
     addedAt TEXT NOT NULL,
     lastReviewedAt TEXT,
+    lastErrorDate TEXT,
+    becomeMasteredAt TEXT,
+    lastAppearedDate TEXT,
     isCustom INTEGER DEFAULT 0,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -164,11 +168,15 @@ function migrateDatabase() {
           meaning TEXT NOT NULL,
           studentId TEXT NOT NULL,
           type TEXT NOT NULL DEFAULT 'word' CHECK(type IN ('word', 'phrase', 'sentence')),
-          status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'reviewed', 'mastered', 'error')),
+          status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'old', 'review', 'mastered')),
           correctCount INTEGER DEFAULT 0,
           errorCount INTEGER DEFAULT 0,
+          consecutiveCorrectCount INTEGER DEFAULT 0,
           addedAt TEXT NOT NULL,
           lastReviewedAt TEXT,
+          lastErrorDate TEXT,
+          becomeMasteredAt TEXT,
+          lastAppearedDate TEXT,
           isCustom INTEGER DEFAULT 0,
           createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
           updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -178,18 +186,26 @@ function migrateDatabase() {
 
       // 2. 复制数据到新表（排除 grade 列，使用默认值补充缺失字段）
       db.exec(`
-        INSERT INTO vocabulary_new (id, word, meaning, studentId, type, status, correctCount, errorCount, addedAt, lastReviewedAt, isCustom, createdAt, updatedAt)
+        INSERT INTO vocabulary_new (id, word, meaning, studentId, type, status, correctCount, errorCount, consecutiveCorrectCount, addedAt, lastReviewedAt, lastErrorDate, becomeMasteredAt, lastAppearedDate, isCustom, createdAt, updatedAt)
         SELECT 
           id, 
           word, 
           meaning, 
           COALESCE(studentId, '') as studentId,
           COALESCE(type, 'word') as type,
-          COALESCE(status, 'new') as status,
+          CASE 
+            WHEN status = 'reviewed' THEN 'old'
+            WHEN status = 'error' THEN 'review'
+            ELSE COALESCE(status, 'new')
+          END as status,
           COALESCE(correctCount, 0) as correctCount,
           COALESCE(errorCount, 0) as errorCount,
+          0 as consecutiveCorrectCount,
           COALESCE(addedAt, CURRENT_TIMESTAMP) as addedAt,
           lastReviewedAt,
+          CASE WHEN status = 'error' THEN lastReviewedAt ELSE NULL END as lastErrorDate,
+          CASE WHEN status = 'mastered' THEN lastReviewedAt ELSE NULL END as becomeMasteredAt,
+          NULL as lastAppearedDate,
           COALESCE(isCustom, 0) as isCustom,
           COALESCE(createdAt, CURRENT_TIMESTAMP) as createdAt,
           COALESCE(updatedAt, CURRENT_TIMESTAMP) as updatedAt
@@ -219,6 +235,26 @@ migrateDatabase();
 // 为 vocabulary 表添加缺失的字段
 try {
   db.prepare('ALTER TABLE vocabulary ADD COLUMN type TEXT DEFAULT "word"').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+try {
+  db.prepare('ALTER TABLE vocabulary ADD COLUMN consecutiveCorrectCount INTEGER DEFAULT 0').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+try {
+  db.prepare('ALTER TABLE vocabulary ADD COLUMN lastErrorDate TEXT').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+try {
+  db.prepare('ALTER TABLE vocabulary ADD COLUMN becomeMasteredAt TEXT').run();
+} catch (e) {
+  // 列已存在，忽略
+}
+try {
+  db.prepare('ALTER TABLE vocabulary ADD COLUMN lastAppearedDate TEXT').run();
 } catch (e) {
   // 列已存在，忽略
 }

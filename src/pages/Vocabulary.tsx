@@ -18,14 +18,14 @@ const Vocabulary: React.FC = () => {
   } = useStore();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'reviewed' | 'mastered' | 'error'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'old' | 'review' | 'mastered'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingWord, setEditingWord] = useState<VocabularyType | null>(null);
   const [formData, setFormData] = useState<{
     word: string;
     meaning: string;
     type: 'word' | 'phrase' | 'sentence';
-    status: 'new' | 'reviewed' | 'mastered' | 'error';
+    status: 'new' | 'old' | 'review' | 'mastered';
   }>({
     word: '',
     meaning: '',
@@ -171,9 +171,9 @@ const Vocabulary: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const badges = {
       new: { text: '新词', color: 'bg-orange-100 text-orange-700', icon: Clock },
-      reviewed: { text: '旧词', color: 'bg-blue-100 text-blue-700', icon: BookOpen },
+      old: { text: '旧词', color: 'bg-blue-100 text-blue-700', icon: BookOpen },
       mastered: { text: '已掌握', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-      error: { text: '需复习', color: 'bg-red-100 text-red-700', icon: XCircle },
+      review: { text: '需复习', color: 'bg-red-100 text-red-700', icon: XCircle },
     };
     return badges[status as keyof typeof badges] || badges.new;
   };
@@ -286,9 +286,9 @@ const Vocabulary: React.FC = () => {
             >
               <option value="all">全部状态</option>
               <option value="new">新词</option>
-              <option value="reviewed">旧词</option>
+              <option value="review">旧词</option>
               <option value="mastered">已掌握</option>
-              <option value="error">需复习</option>
+              <option value="review">需复习</option>
             </select>
           </div>
 
@@ -422,9 +422,9 @@ const Vocabulary: React.FC = () => {
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   >
                     <option value="new">新词</option>
-                    <option value="reviewed">旧词</option>
+                    <option value="review">旧词</option>
                     <option value="mastered">已掌握</option>
-                    <option value="error">需复习</option>
+                    <option value="review">需复习</option>
                   </select>
                 </div>
                 <div className="flex gap-3 pt-4">

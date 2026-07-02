@@ -10,6 +10,7 @@ const createWord = (word: string, meaning: string) => ({
   status: 'new' as const,
   correctCount: 0,
   errorCount: 0,
+  consecutiveCorrectCount: 0,
   isCustom: 0,
 });
 

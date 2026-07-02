@@ -7,11 +7,15 @@ interface Vocabulary {
   word: string;
   meaning: string;
   studentId: string;
-  status: 'new' | 'reviewed' | 'mastered' | 'error';
+  status: 'new' | 'old' | 'review' | 'mastered';
   correctCount: number;
   errorCount: number;
+  consecutiveCorrectCount: number;
   addedAt: string;
   lastReviewedAt?: string;
+  lastErrorDate?: string;
+  becomeMasteredAt?: string;
+  lastAppearedDate?: string;
   isCustom: number;
   createdAt?: string;
   updatedAt?: string;
@@ -420,27 +424,28 @@ router.get('/daily-task', (req, res) => {
   }
 });
 
+// 获取本地日期的工具函数
+function getLocalToday(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 router.post('/daily-task/generate', (req, res) => {
   try {
     const { studentId } = req.body;
-    // 获取本地日期而不是 UTC 日期
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const localToday = `${year}-${month}-${day}`;
+    const localToday = getLocalToday();
 
     let TARGET_COUNT = 30;
     
-    // 先尝试从学生表获取配置
     if (studentId) {
       const student = db.prepare('SELECT dailyTaskCount FROM students WHERE id = ?').get(studentId) as any;
       if (student && student.dailyTaskCount) {
         TARGET_COUNT = student.dailyTaskCount;
       }
     }
-    
-    // 如果学生没有配置，从设置表获取
     if (TARGET_COUNT === 30) {
       const settings = db.prepare('SELECT dailyTaskCount FROM settings WHERE id = 1').get() as any;
       if (settings && settings.dailyTaskCount) {
@@ -448,100 +453,210 @@ router.post('/daily-task/generate', (req, res) => {
       }
     }
 
-    const allVocabulary = db.prepare(`
-      SELECT * FROM vocabulary
-      WHERE studentId = ?
-      ORDER BY 
-        CASE status 
-          WHEN 'error' THEN 1 
-          WHEN 'reviewed' THEN 2 
-          WHEN 'mastered' THEN 3 
-          WHEN 'new' THEN 4 
-        END,
-        RANDOM()
-    `).all(studentId);
+    // 统计各类词汇数量
+    const countByStatus = db.prepare(`
+      SELECT status, COUNT(*) as count FROM vocabulary WHERE studentId = ? GROUP BY status
+    `).all(studentId) as { status: string; count: number }[];
 
-    if (allVocabulary.length === 0) {
-      res.json({
-        id: null,
-        date: today,
-        studentId,
-        newWords: [],
-        reviewedWords: [],
-        completed: false,
-        markedErrorWords: [],
-        message: '暂无词汇，请先添加词汇'
-      });
+    const counts: Record<string, number> = { new: 0, old: 0, review: 0, mastered: 0 };
+    for (const row of countByStatus) {
+      counts[row.status] = row.count;
+    }
+
+    const totalVocab = counts.new + counts.old + counts.review + counts.mastered;
+    if (totalVocab === 0) {
+      res.json({ id: null, date: localToday, studentId, newWords: [], reviewedWords: [], completed: false, markedErrorWords: [], message: '暂无词汇，请先添加词汇' });
       return;
     }
 
-    const newWordsList: any[] = [];
-    const reviewedWordsList: any[] = [];
-    const usedIds = new Set<string>();
+    // === 确定基准比例 ===
+    let baseReview = 15, baseOld = 9, baseNew = 5, baseMastered = 1;
+    if (counts.review > 40) {
+      baseReview = 20; baseOld = 4; baseNew = 5; baseMastered = 1;
+    } else if (counts.review < 8) {
+      baseReview = 8; baseOld = 16; baseNew = 5; baseMastered = 1;
+    }
+    const baseSum = baseReview + baseOld + baseNew + baseMastered;
 
-    const REVIEW_CAP = Math.max(5, Math.floor(TARGET_COUNT / 3));
+    // === 按比例缩放 ===
+    let needReview = Math.ceil((baseReview / baseSum) * TARGET_COUNT);
+    let needOld = Math.ceil((baseOld / baseSum) * TARGET_COUNT);
+    let needNewCap = Math.ceil((baseNew / baseSum) * TARGET_COUNT);
+    let needMastered = Math.ceil((baseMastered / baseSum) * TARGET_COUNT);
 
-    for (const vocab of allVocabulary) {
-      const v = vocab as Vocabulary;
-      if (usedIds.has(v.id)) continue;
-      
-      if ((v.status === 'error' || v.status === 'reviewed' || v.status === 'mastered') && reviewedWordsList.length < REVIEW_CAP) {
-        reviewedWordsList.push(v);
-        usedIds.add(v.id);
-      } else if (v.status === 'new') {
-        newWordsList.push(v);
-        usedIds.add(v.id);
+    // 修正总数偏差
+    let totalNeeded = needReview + needOld + needNewCap + needMastered;
+    if (totalNeeded > TARGET_COUNT) {
+      const diff = totalNeeded - TARGET_COUNT;
+      needReview = Math.max(0, needReview - diff);
+      totalNeeded = needReview + needOld + needNewCap + needMastered;
+      if (totalNeeded > TARGET_COUNT) {
+        needOld = Math.max(0, needOld - (totalNeeded - TARGET_COUNT));
       }
-
-      if (usedIds.size >= TARGET_COUNT) break;
     }
 
-    let currentCount = newWordsList.length + reviewedWordsList.length;
-    if (currentCount < TARGET_COUNT) {
-      const remaining = db.prepare(`
+    const selectedIds = new Set<string>();
+    const selectedReview: any[] = [];
+    const selectedOld: any[] = [];
+    const selectedNew: any[] = [];
+    const selectedMastered: any[] = [];
+
+    // === 1. 选取需复习单词 ===
+    if (needReview > 0) {
+      const reviewQuery = `
         SELECT * FROM vocabulary
-        WHERE studentId = ?
-        AND id NOT IN (${Array.from(usedIds).map(() => '?').join(',') || "''"})
-        ORDER BY RANDOM()
-        LIMIT ?
-      `).all(studentId, ...Array.from(usedIds), TARGET_COUNT - currentCount) as Vocabulary[];
-      
-      for (const vocab of remaining) {
-        if (vocab.status === 'new') {
-          newWordsList.push(vocab);
-        } else {
-          reviewedWordsList.push(vocab);
-        }
-        currentCount++;
-        if (currentCount >= TARGET_COUNT) break;
+        WHERE studentId = ? AND status = 'review'
+        ORDER BY lastErrorDate ASC, errorCount DESC
+      `;
+      const candidates = db.prepare(reviewQuery).all(studentId) as Vocabulary[];
+      for (const w of candidates) {
+        if (w.lastAppearedDate === localToday) continue;
+        if (selectedIds.has(w.id)) continue;
+        selectedReview.push(w);
+        selectedIds.add(w.id);
+        if (selectedReview.length >= needReview) break;
+      }
+    }
+    if (selectedReview.length < needReview) {
+      const deficit = needReview - selectedReview.length;
+      const fillQuery = `
+        SELECT * FROM vocabulary
+        WHERE studentId = ? AND status = 'old'
+        ORDER BY lastReviewedAt ASC
+      `;
+      const fillCandidates = db.prepare(fillQuery).all(studentId) as Vocabulary[];
+      for (const w of fillCandidates) {
+        if (selectedIds.has(w.id)) continue;
+        selectedReview.push(w);
+        selectedIds.add(w.id);
+        if (selectedReview.length >= needReview) break;
       }
     }
 
-    const allSelected = [...newWordsList, ...reviewedWordsList].sort(() => Math.random() - 0.5);
-    const finalNewWords = newWordsList.filter(w => allSelected.includes(w));
-    const finalReviewedWords = reviewedWordsList.filter(w => allSelected.includes(w));
+    // === 2. 选取旧词 ===
+    if (needOld > 0) {
+      const oldQuery = `
+        SELECT * FROM vocabulary
+        WHERE studentId = ? AND status = 'old'
+        ORDER BY lastReviewedAt ASC
+      `;
+      const candidates = db.prepare(oldQuery).all(studentId) as Vocabulary[];
+      for (const w of candidates) {
+        if (selectedIds.has(w.id)) continue;
+        if (w.lastReviewedAt) {
+          const daysSince = Math.floor(
+            (new Date(localToday).getTime() - new Date(w.lastReviewedAt).getTime()) / (1000 * 60 * 60 * 24)
+          );
+          if (daysSince < 3) continue;
+        }
+        selectedOld.push(w);
+        selectedIds.add(w.id);
+        if (selectedOld.length >= needOld) break;
+      }
+    }
+    if (selectedOld.length < needOld) {
+      const deficit = needOld - selectedOld.length;
+      const fillQuery = `
+        SELECT * FROM vocabulary
+        WHERE studentId = ? AND status = 'review'
+        ORDER BY lastErrorDate ASC
+      `;
+      const fillCandidates = db.prepare(fillQuery).all(studentId) as Vocabulary[];
+      for (const w of fillCandidates) {
+        if (selectedIds.has(w.id)) continue;
+        selectedOld.push(w);
+        selectedIds.add(w.id);
+        if (selectedOld.length >= needOld) break;
+      }
+    }
+
+    // === 3. 选取新词 ===
+    if (needNewCap > 0) {
+      const newQuery = `
+        SELECT * FROM vocabulary
+        WHERE studentId = ? AND status = 'new'
+        ORDER BY addedAt ASC
+      `;
+      const candidates = db.prepare(newQuery).all(studentId) as Vocabulary[];
+      for (const w of candidates) {
+        if (selectedIds.has(w.id)) continue;
+        selectedNew.push(w);
+        selectedIds.add(w.id);
+        if (selectedNew.length >= needNewCap) break;
+      }
+    }
+    if (selectedNew.length < needNewCap) {
+      const deficit = needNewCap - selectedNew.length;
+      const fillQuery = `
+        SELECT * FROM vocabulary
+        WHERE studentId = ? AND status IN ('old', 'review')
+        ORDER BY lastReviewedAt ASC
+      `;
+      const fillCandidates = db.prepare(fillQuery).all(studentId) as Vocabulary[];
+      for (const w of fillCandidates) {
+        if (selectedIds.has(w.id)) continue;
+        selectedNew.push(w);
+        selectedIds.add(w.id);
+        if (selectedNew.length >= needNewCap) break;
+      }
+    }
+
+    // === 4. 选取已掌握抽检 ===
+    if (needMastered > 0) {
+      const masteredQuery = `
+        SELECT * FROM vocabulary
+        WHERE studentId = ? AND status = 'mastered'
+        ORDER BY becomeMasteredAt ASC
+      `;
+      const candidates = db.prepare(masteredQuery).all(studentId) as Vocabulary[];
+      for (const w of candidates) {
+        if (selectedIds.has(w.id)) continue;
+        selectedMastered.push(w);
+        selectedIds.add(w.id);
+        if (selectedMastered.length >= needMastered) break;
+      }
+    }
+    if (selectedMastered.length < needMastered) {
+      const deficit = needMastered - selectedMastered.length;
+      const fillQuery = `
+        SELECT * FROM vocabulary
+        WHERE studentId = ? AND status IN ('old', 'review')
+        ORDER BY lastReviewedAt ASC
+      `;
+      const fillCandidates = db.prepare(fillQuery).all(studentId) as Vocabulary[];
+      for (const w of fillCandidates) {
+        if (selectedIds.has(w.id)) continue;
+        selectedMastered.push(w);
+        selectedIds.add(w.id);
+        if (selectedMastered.length >= needMastered) break;
+      }
+    }
+
+    // === 更新 lastAppearedDate ===
+    const updateAppear = db.prepare('UPDATE vocabulary SET lastAppearedDate = ?, updatedAt = ? WHERE id = ?');
+    const nowStr = new Date().toISOString();
+    for (const w of [...selectedReview, ...selectedOld, ...selectedNew, ...selectedMastered]) {
+      updateAppear.run(localToday, nowStr, w.id);
+    }
+
+    // === 构建最终列表 ===
+    const allSelected = [...selectedReview, ...selectedOld, ...selectedNew, ...selectedMastered].sort(() => Math.random() - 0.5);
+    const finalNewWords = selectedNew.filter(w => allSelected.includes(w));
+    const finalReviewedWords = allSelected.filter((w: any) => !finalNewWords.includes(w));
 
     const taskId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    db.prepare('DELETE FROM daily_tasks WHERE date = ? AND studentId = ?').run(localToday, studentId);
 
-    db.prepare(`
-      DELETE FROM daily_tasks WHERE date = ? AND studentId = ?
-    `).run(localToday, studentId);
-
-    const totalCount = finalNewWords.length + finalReviewedWords.length;
+    const totalCount = allSelected.length;
     db.prepare(`
       INSERT INTO daily_tasks (id, date, studentId, completed, markedErrorWords, newWords, reviewedWords, totalCount)
       VALUES (?, ?, ?, 0, '[]', ?, ?, ?)
     `).run(taskId, localToday, studentId, JSON.stringify(finalNewWords), JSON.stringify(finalReviewedWords), totalCount);
 
     res.json({
-      id: taskId,
-      date: localToday,
-      studentId,
-      newWords: finalNewWords,
-      reviewedWords: finalReviewedWords,
-      totalCount,
-      completed: false,
-      markedErrorWords: []
+      id: taskId, date: localToday, studentId,
+      newWords: finalNewWords, reviewedWords: finalReviewedWords,
+      totalCount, completed: false, markedErrorWords: []
     });
   } catch (error) {
     console.error('生成任务失败:', error);
@@ -552,12 +667,7 @@ router.post('/daily-task/generate', (req, res) => {
 router.post('/daily-task/complete', (req, res) => {
   try {
     const { taskId, errorWordIds, studentId } = req.body;
-    // 获取本地日期而不是 UTC 日期
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const localToday = `${year}-${month}-${day}`;
+    const localToday = getLocalToday();
     const errorIdsSet = new Set(errorWordIds || []);
 
     const task = db.prepare('SELECT * FROM daily_tasks WHERE id = ?').get(taskId) as any;
@@ -588,39 +698,66 @@ router.post('/daily-task/complete', (req, res) => {
       WHERE id = ?
     `).run(JSON.stringify(errorWordIds), taskId);
 
+    // 答错处理：所有答错的单词转入需复习，连续正确次数清零
     const updateError = db.transaction((ids: string[]) => {
       for (const id of ids) {
         db.prepare(`
           UPDATE vocabulary
-          SET status = 'error', errorCount = errorCount + 1, correctCount = 0, lastReviewedAt = ?, updatedAt = ?
+          SET status = 'review', consecutiveCorrectCount = 0, errorCount = errorCount + 1,
+              lastErrorDate = ?, lastReviewedAt = ?, updatedAt = ?
           WHERE id = ?
-        `).run(localToday, localToday, id);
+        `).run(localToday, localToday, localToday, id);
       }
     });
 
+    // 答对处理
     const updateCorrect = db.transaction((ids: string[]) => {
       for (const id of ids) {
         const vocab = db.prepare('SELECT * FROM vocabulary WHERE id = ?').get(id) as any;
-        if (vocab) {
-          if (vocab.correctCount >= 3) {
+        if (!vocab) continue;
+
+        if (vocab.status === 'new') {
+          // 首次默写完成 → 转为旧词
+          db.prepare(`
+            UPDATE vocabulary
+            SET status = 'old', consecutiveCorrectCount = 1, correctCount = correctCount + 1,
+                lastReviewedAt = ?, updatedAt = ?
+            WHERE id = ?
+          `).run(localToday, localToday, id);
+        } else if (vocab.status === 'old') {
+          // 旧词答对 → 保持旧词，连续正确次数+1
+          db.prepare(`
+            UPDATE vocabulary
+            SET consecutiveCorrectCount = consecutiveCorrectCount + 1, correctCount = correctCount + 1,
+                lastReviewedAt = ?, updatedAt = ?
+            WHERE id = ?
+          `).run(localToday, localToday, id);
+        } else if (vocab.status === 'review') {
+          const newConsecutive = (vocab.consecutiveCorrectCount || 0) + 1;
+          if (newConsecutive >= 3) {
+            // 连续3次正确 → 转为已掌握
             db.prepare(`
               UPDATE vocabulary
-              SET status = 'mastered', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
+              SET status = 'mastered', consecutiveCorrectCount = ?, correctCount = correctCount + 1,
+                  becomeMasteredAt = ?, lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(localToday, localToday, id);
-          } else if (vocab.status === 'new') {
-            db.prepare(`
-              UPDATE vocabulary
-              SET status = 'reviewed', correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
-              WHERE id = ?
-            `).run(localToday, localToday, id);
+            `).run(newConsecutive, localToday, localToday, localToday, id);
           } else {
+            // 仍不足3次 → 保持需复习
             db.prepare(`
               UPDATE vocabulary
-              SET correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
+              SET consecutiveCorrectCount = ?, correctCount = correctCount + 1,
+                  lastReviewedAt = ?, updatedAt = ?
               WHERE id = ?
-            `).run(localToday, localToday, id);
+            `).run(newConsecutive, localToday, localToday, id);
           }
+        } else if (vocab.status === 'mastered') {
+          // 已掌握抽检答对 → 保持已掌握
+          db.prepare(`
+            UPDATE vocabulary
+            SET correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
+            WHERE id = ?
+          `).run(localToday, localToday, id);
         }
       }
     });
@@ -648,6 +785,7 @@ router.post('/daily-task/complete', (req, res) => {
 
     res.json({ message: '任务完成' });
   } catch (error) {
+    console.error('完成任务失败:', error);
     res.status(500).json({ error: '完成任务失败' });
   }
 });
@@ -730,6 +868,10 @@ router.get('/statistics', (req, res) => {
     for (const row of byStatus) {
       if (row.status in stats) {
         (stats as any)[row.status] = row.count;
+      } else if (row.status === 'old') {
+        stats.reviewed = row.count;
+      } else if (row.status === 'review') {
+        stats.error = row.count;
       }
     }
 
