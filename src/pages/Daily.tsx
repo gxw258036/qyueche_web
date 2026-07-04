@@ -11,6 +11,7 @@ const Daily: React.FC = () => {
     generateDailyTask,
     completeDailyTask,
     loadDailyTask,
+    currentStudent,
   } = useStore();
   
   const [selectedErrors, setSelectedErrors] = useState<string[]>([]);
@@ -87,7 +88,8 @@ const Daily: React.FC = () => {
 
   const handlePrint = async () => {
     if (allWords.length > 0) {
-      await printPaper(allWords, false);
+      const today = new Date().toLocaleDateString('zh-CN');
+      await printPaper(allWords, false, currentStudent?.name, today);
     }
   };
 
