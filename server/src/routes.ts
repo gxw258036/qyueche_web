@@ -952,10 +952,21 @@ router.post('/import', (req, res) => {
 
       if (data.vocabulary && Array.isArray(data.vocabulary)) {
         const insertVocabulary = db.prepare(`
-          INSERT OR REPLACE INTO vocabulary (id, word, meaning, studentId, type, status, correctCount, errorCount, addedAt, lastReviewedAt, isCustom, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT OR REPLACE INTO vocabulary (id, word, meaning, studentId, type, status, correctCount, errorCount, consecutiveCorrectCount, addedAt, lastReviewedAt, lastErrorDate, becomeMasteredAt, lastAppearedDate, isCustom, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        
+
+        // 兼容旧 status 体系：reviewed→old, error→review
+        const normalizeStatus = (s: any): string => {
+          if (!s) return 'new';
+          if (s === 'reviewed') return 'old';
+          if (s === 'error') return 'review';
+          // 新体系合法值直接放行
+          if (['new', 'old', 'review', 'mastered'].includes(s)) return s;
+          // 未知值降级为 new，避免 CHECK 约束失败
+          return 'new';
+        };
+
         for (const vocab of data.vocabulary) {
           insertVocabulary.run(
             vocab.id,
@@ -963,11 +974,15 @@ router.post('/import', (req, res) => {
             vocab.meaning,
             vocab.studentId,
             vocab.type || 'word',
-            vocab.status || 'new',
+            normalizeStatus(vocab.status),
             vocab.correctCount || 0,
             vocab.errorCount || 0,
+            vocab.consecutiveCorrectCount || 0,
             vocab.addedAt || new Date().toISOString(),
             vocab.lastReviewedAt,
+            vocab.lastErrorDate,
+            vocab.becomeMasteredAt,
+            vocab.lastAppearedDate,
             vocab.isCustom || 0,
             vocab.createdAt || new Date().toISOString(),
             vocab.updatedAt || new Date().toISOString()
