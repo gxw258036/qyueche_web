@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import { execSync } from 'child_process';
 import db from './database';
 import { initializeVocabulary } from './initData';
 import router from './routes';
@@ -9,6 +10,52 @@ import router from './routes';
 const app = express();
 // 固定使用 3000 端口（端口已在服务器上做过映射，不要切换其他端口）
 const PORT = 3000;
+
+/**
+ * 启动前主动清理占用指定端口的旧进程（排除当前进程自身）
+ * 防止上次未正常退出的进程占用端口导致 EADDRINUSE
+ */
+function killPortOccupants(port: number): void {
+  const myPid = process.pid.toString();
+  let pids: string[] = [];
+
+  // 优先用 lsof
+  try {
+    const out = execSync(`lsof -ti:${port} 2>/dev/null`, { encoding: 'utf8' }).trim();
+    if (out) pids = out.split('\n').map(p => p.trim()).filter(Boolean);
+  } catch {
+    // lsof 不可用或未找到
+  }
+
+  // lsof 不可用时用 fuser 作为后备
+  if (pids.length === 0) {
+    try {
+      const out = execSync(`fuser ${port}/tcp 2>/dev/null`, { encoding: 'utf8' }).trim();
+      if (out) pids = out.split(/\s+/).map(p => p.trim()).filter(Boolean);
+    } catch {
+      // fuser 不可用或未找到
+    }
+  }
+
+  // 排除当前进程
+  pids = pids.filter(p => p && p !== myPid);
+  if (pids.length === 0) return;
+
+  console.log(`⚠ 端口 ${port} 被旧进程占用，正在停止: ${pids.join(', ')}`);
+  for (const pid of pids) {
+    try { execSync(`kill -9 ${pid} 2>/dev/null`); } catch {}
+  }
+
+  // 等待端口释放（最多 3 秒）
+  const start = Date.now();
+  while (Date.now() - start < 3000) {
+    try {
+      const out = execSync(`lsof -i:${port} 2>/dev/null`, { encoding: 'utf8' }).trim();
+      if (!out) break;
+    } catch { break; }
+  }
+  console.log(`✓ 端口 ${port} 已释放`);
+}
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -32,6 +79,9 @@ if (fs.existsSync(distPath)) {
 }
 
 initializeVocabulary();
+
+// 启动前主动清理占用 3000 端口的旧进程
+killPortOccupants(PORT);
 
 const server = app.listen(PORT, () => {
   console.log('\n🚀 小学英语默写工具服务器已启动');

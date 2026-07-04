@@ -12,11 +12,17 @@ echo "=============================================="
 echo ""
 
 # 杀掉占用 3000 端口的旧进程（端口已做服务器映射，固定使用 3000）
+# 优先用 lsof，lsof 不可用时用 fuser 作为后备
 PORT=3000
 PIDS=$(lsof -ti:${PORT} 2>/dev/null)
+if [ -z "$PIDS" ]; then
+  PIDS=$(fuser ${PORT}/tcp 2>/dev/null | tr -d ' ')
+fi
 if [ -n "$PIDS" ]; then
   echo "⚠ 端口 ${PORT} 被占用，正在停止旧进程: $PIDS"
-  kill -9 $PIDS 2>/dev/null
+  for PID in $PIDS; do
+    kill -9 $PID 2>/dev/null
+  done
   sleep 2
 fi
 
