@@ -256,14 +256,20 @@ export const useStore = create<Store>((set, get) => ({
       const settings = await api.settings.get();
       set({ settings });
       const students = get().students;
-      if (settings.currentStudentId && students.length > 0) {
-        const currentStudent = students.find(s => s.id === settings.currentStudentId);
-        if (currentStudent) {
-          set({ currentStudent });
-          await get().loadVocabulary(currentStudent.id);
-          await get().loadDailyTask();
-          await get().loadStatistics();
+      if (students.length > 0) {
+        // 优先按 currentStudentId 匹配；匹配不到或为 null 时选第一个学生
+        let currentStudent = settings.currentStudentId
+          ? students.find(s => s.id === settings.currentStudentId)
+          : null;
+        if (!currentStudent) {
+          currentStudent = students[0];
+          // 持久化修复后的 currentStudentId
+          await api.settings.update({ currentStudentId: currentStudent.id });
         }
+        set({ currentStudent });
+        await get().loadVocabulary(currentStudent.id);
+        await get().loadDailyTask();
+        await get().loadStatistics();
       }
     } catch (error) {
       console.error('加载设置失败:', error);

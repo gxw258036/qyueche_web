@@ -321,6 +321,66 @@ function migrateDatabase(): void {
     }
   }
 
+  // 6.5 迁移 daily_tasks 表（移除 grade 字段和 UNIQUE(date, grade, studentId) 约束）
+  const dailyTasksColumns = db.prepare("PRAGMA table_info(daily_tasks)").all() as any[];
+  const dailyTasksHasGrade = dailyTasksColumns.some(col => col.name === 'grade');
+
+  if (dailyTasksHasGrade) {
+    console.log('⚠ 检测到 daily_tasks 表有 grade 字段，正在迁移...');
+    const originalCount = db.prepare('SELECT COUNT(*) as c FROM daily_tasks').get() as any;
+
+    try {
+      const migrate = db.transaction(() => {
+        db.exec('DROP TABLE IF EXISTS daily_tasks_temp;');
+        db.exec(`
+          CREATE TABLE daily_tasks_temp (
+            id TEXT PRIMARY KEY,
+            date TEXT NOT NULL,
+            studentId TEXT,
+            completed INTEGER DEFAULT 0,
+            markedErrorWords TEXT,
+            newWords TEXT,
+            reviewedWords TEXT,
+            correctCount INTEGER DEFAULT 0,
+            errorCount INTEGER DEFAULT 0,
+            totalCount INTEGER DEFAULT 0,
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        // 复制数据，忽略 grade 字段
+        const cols = dailyTasksColumns.map(c => c.name);
+        const hasNewWords = cols.includes('newWords');
+        const hasReviewedWords = cols.includes('reviewedWords');
+        const hasCorrectCount = cols.includes('correctCount');
+        const hasErrorCount = cols.includes('errorCount');
+        const hasTotalCount = cols.includes('totalCount');
+        db.exec(`
+          INSERT INTO daily_tasks_temp (id, date, studentId, completed, markedErrorWords, newWords, reviewedWords, correctCount, errorCount, totalCount, createdAt)
+          SELECT
+            id, date, studentId, COALESCE(completed, 0), COALESCE(markedErrorWords, '[]'),
+            ${hasNewWords ? 'newWords' : 'NULL'},
+            ${hasReviewedWords ? 'reviewedWords' : 'NULL'},
+            ${hasCorrectCount ? 'COALESCE(correctCount, 0)' : '0'},
+            ${hasErrorCount ? 'COALESCE(errorCount, 0)' : '0'},
+            ${hasTotalCount ? 'COALESCE(totalCount, 0)' : '0'},
+            COALESCE(createdAt, CURRENT_TIMESTAMP)
+          FROM daily_tasks;
+        `);
+        const newCount = db.prepare('SELECT COUNT(*) as c FROM daily_tasks_temp').get() as any;
+        if (newCount.c !== originalCount.c) {
+          throw new Error(`数据量不匹配: 原始 ${originalCount.c} 条, 迁移后 ${newCount.c} 条`);
+        }
+        db.exec('DROP TABLE daily_tasks;');
+        db.exec('ALTER TABLE daily_tasks_temp RENAME TO daily_tasks;');
+      });
+      migrate();
+      console.log('✓ daily_tasks 表迁移完成');
+    } catch (error) {
+      console.error('⚠ daily_tasks 表迁移失败:', error);
+      try { db.exec('DROP TABLE IF EXISTS daily_tasks_temp;'); } catch {}
+    }
+  }
+
   // 7. 重建索引
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_students_name ON students(name);
@@ -329,6 +389,20 @@ function migrateDatabase(): void {
     CREATE INDEX IF NOT EXISTS idx_daily_tasks_date ON daily_tasks(date);
     CREATE INDEX IF NOT EXISTS idx_daily_tasks_studentId ON daily_tasks(studentId);
   `);
+
+  // 8. 修复数据关联：vocabulary.studentId 为 null 时关联到唯一学生
+  try {
+    const nullSidCount = db.prepare('SELECT COUNT(*) as c FROM vocabulary WHERE studentId IS NULL').get() as any;
+    if (nullSidCount.c > 0) {
+      const students = db.prepare('SELECT id FROM students ORDER BY createdAt ASC LIMIT 1').get() as any;
+      if (students) {
+        db.prepare('UPDATE vocabulary SET studentId = ? WHERE studentId IS NULL').run(students.id);
+        console.log(`  ✓ 修复 ${nullSidCount.c} 条 vocabulary.studentId 为 null 的记录 → 学生 ${students.id}`);
+      }
+    }
+  } catch (e) {
+    console.error('  ⚠ 修复 vocabulary.studentId 失败:', e);
+  }
 
   console.log('✓ 数据库迁移完成！');
 }
@@ -343,7 +417,7 @@ try {
 
 // ========== 初始化默认设置 ==========
 
-const initSettings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
+const initSettings = db.prepare('SELECT * FROM settings WHERE id = 1').get() as any;
 if (!initSettings) {
   const today = new Date();
   const year = today.getFullYear();
@@ -351,6 +425,21 @@ if (!initSettings) {
   const day = String(today.getDate()).padStart(2, '0');
   const localToday = `${year}-${month}-${day}`;
   db.prepare('INSERT INTO settings (id, lastStudyDate, dailyTaskCount) VALUES (1, ?, 30)').run(localToday);
+}
+
+// ========== 修复 settings.currentStudentId 为 null ==========
+// 如果没有设置当前学生，但有学生数据，自动选择第一个学生
+try {
+  const settings = db.prepare('SELECT currentStudentId FROM settings WHERE id = 1').get() as any;
+  if (settings && !settings.currentStudentId) {
+    const firstStudent = db.prepare('SELECT id FROM students ORDER BY createdAt ASC LIMIT 1').get() as any;
+    if (firstStudent) {
+      db.prepare('UPDATE settings SET currentStudentId = ? WHERE id = 1').run(firstStudent.id);
+      console.log(`✓ 自动设置当前学生: ${firstStudent.id}`);
+    }
+  }
+} catch (e) {
+  console.error('⚠ 修复 settings.currentStudentId 失败:', e);
 }
 
 export default db;

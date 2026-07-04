@@ -23,7 +23,7 @@ export interface Vocabulary {
   meaning: string;
   studentId: string;
   type: 'word' | 'phrase' | 'sentence';
-  status: 'new' | 'reviewed' | 'mastered' | 'error';
+  status: 'new' | 'old' | 'review' | 'mastered';
   correctCount: number;
   errorCount: number;
   addedAt: string;
@@ -31,6 +31,10 @@ export interface Vocabulary {
   isCustom: number;
   createdAt?: string;
   updatedAt?: string;
+  consecutiveCorrectCount?: number;
+  lastErrorDate?: string;
+  lastAppearedDate?: string;
+  becomeMasteredAt?: string;
 }
 
 export interface DailyTask {

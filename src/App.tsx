@@ -12,15 +12,13 @@ import Students from '@/pages/Students';
 import DataMigration from '@/pages/DataMigration';
 
 function App() {
-  const { loadSettings, loadStudents, loadVocabulary, loadDailyTask, loadStatistics, error, clearError } = useStore();
+  const { loadSettings, loadStudents, error, clearError } = useStore();
 
   useEffect(() => {
     const init = async () => {
-      await loadSettings();
+      // 必须先加载学生，loadSettings 才能根据 currentStudentId 恢复 currentStudent
       await loadStudents();
-      await loadVocabulary();
-      await loadDailyTask();
-      await loadStatistics();
+      await loadSettings();
     };
     init();
   }, []);

@@ -769,17 +769,10 @@ router.get('/statistics', (req, res) => {
   try {
     const studentId = req.query.studentId as string;
 
-    const stats = {
-      total: 0,
-      new: 0,
-      reviewed: 0,
-      mastered: 0,
-      error: 0,
-    };
+    const counts: Record<string, number> = { new: 0, old: 0, review: 0, mastered: 0 };
 
     const total = db.prepare('SELECT COUNT(*) as count FROM vocabulary WHERE studentId = ?')
       .get(studentId) as { count: number };
-    stats.total = total.count;
 
     const byStatus = db.prepare(`
       SELECT status, COUNT(*) as count
@@ -789,9 +782,7 @@ router.get('/statistics', (req, res) => {
     `).all(studentId) as { status: string; count: number }[];
 
     for (const row of byStatus) {
-      if (row.status in stats) {
-        (stats as any)[row.status] = row.count;
-      }
+      counts[row.status] = row.count;
     }
 
     const totalCorrect = db.prepare(`
@@ -807,7 +798,14 @@ router.get('/statistics', (req, res) => {
     `).get(studentId) as { count: number };
 
     res.json({
-      ...stats,
+      total: total.count,
+      new: counts.new,
+      old: counts.old,
+      review: counts.review,
+      mastered: counts.mastered,
+      // 兼容旧前端字段名
+      reviewed: counts.old,
+      error: counts.review,
       totalCorrect: totalCorrect?.total || 0,
       totalError: totalError?.total || 0,
       completedDays: completedDays?.count || 0
