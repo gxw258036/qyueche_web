@@ -297,8 +297,22 @@ export const useStore = create<Store>((set, get) => ({
       const settings = await api.settings.get();
       set({ settings });
       const students = get().students;
-      if (settings.currentStudentId && students.length > 0) {
-        const currentStudent = students.find(s => s.id === settings.currentStudentId);
+      if (students.length > 0) {
+        let currentStudent: Student | undefined;
+        // 优先按 settings.currentStudentId 匹配
+        if (settings.currentStudentId) {
+          currentStudent = students.find(s => s.id === settings.currentStudentId);
+        }
+        // 匹配不到或 currentStudentId 为 null 时，自动选第一个学生并持久化
+        if (!currentStudent) {
+          currentStudent = students[0];
+          try {
+            await api.settings.update({ currentStudentId: currentStudent.id });
+            set({ settings: { ...settings, currentStudentId: currentStudent.id } });
+          } catch (e) {
+            console.error('自动设置当前学生失败:', e);
+          }
+        }
         if (currentStudent) {
           set({ currentStudent });
           await get().loadVocabulary(currentStudent.id);
