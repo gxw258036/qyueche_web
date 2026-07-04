@@ -904,6 +904,9 @@ router.get('/export', (req, res) => {
     const vocabulary = db.prepare('SELECT * FROM vocabulary').all();
     const dailyTasks = db.prepare('SELECT * FROM daily_tasks').all();
     const settings = db.prepare('SELECT * FROM settings').all();
+    const errorCollections = db.prepare('SELECT * FROM error_collections').all();
+    const grammarWeaknesses = db.prepare('SELECT * FROM grammar_weaknesses').all();
+    const grammarQuestions = db.prepare('SELECT * FROM grammar_questions').all();
 
     const exportData = {
       version: '1.0',
@@ -911,7 +914,10 @@ router.get('/export', (req, res) => {
       students,
       vocabulary,
       dailyTasks,
-      settings
+      settings,
+      errorCollections,
+      grammarWeaknesses,
+      grammarQuestions
     };
 
     res.json(exportData);
@@ -1018,7 +1024,7 @@ router.post('/import', (req, res) => {
           INSERT OR REPLACE INTO settings (id, currentStudentId, lastStudyDate, dailyTaskCount, createdAt, updatedAt)
           VALUES (?, ?, ?, ?, ?, ?)
         `);
-        
+
         for (const setting of data.settings) {
           insertSettings.run(
             setting.id || 1,
@@ -1027,6 +1033,71 @@ router.post('/import', (req, res) => {
             setting.dailyTaskCount || 30,
             setting.createdAt || new Date().toISOString(),
             setting.updatedAt || new Date().toISOString()
+          );
+        }
+      }
+
+      // 错题归集
+      if (data.errorCollections && Array.isArray(data.errorCollections)) {
+        const insertErrorCollection = db.prepare(`
+          INSERT OR REPLACE INTO error_collections (id, studentId, title, question, answer, imageData, category, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        for (const item of data.errorCollections) {
+          insertErrorCollection.run(
+            item.id,
+            item.studentId,
+            item.title,
+            item.question,
+            item.answer,
+            item.imageData,
+            item.category || 'general',
+            item.createdAt || new Date().toISOString(),
+            item.updatedAt || new Date().toISOString()
+          );
+        }
+      }
+
+      // 语法短板
+      if (data.grammarWeaknesses && Array.isArray(data.grammarWeaknesses)) {
+        const insertGrammarWeakness = db.prepare(`
+          INSERT OR REPLACE INTO grammar_weaknesses (id, studentId, title, description, category, example, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        for (const item of data.grammarWeaknesses) {
+          insertGrammarWeakness.run(
+            item.id,
+            item.studentId,
+            item.title,
+            item.description,
+            item.category || 'grammar',
+            item.example,
+            item.createdAt || new Date().toISOString(),
+            item.updatedAt || new Date().toISOString()
+          );
+        }
+      }
+
+      // 语法题目
+      if (data.grammarQuestions && Array.isArray(data.grammarQuestions)) {
+        const insertGrammarQuestion = db.prepare(`
+          INSERT OR REPLACE INTO grammar_questions (id, studentId, weaknessId, question, answer, type, options, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        for (const item of data.grammarQuestions) {
+          insertGrammarQuestion.run(
+            item.id,
+            item.studentId,
+            item.weaknessId,
+            item.question,
+            item.answer,
+            item.type || 'fill_blank',
+            item.options,
+            item.createdAt || new Date().toISOString(),
+            item.updatedAt || new Date().toISOString()
           );
         }
       }

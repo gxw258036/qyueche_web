@@ -9,6 +9,9 @@ export interface ExportData {
   vocabulary: Vocabulary[];
   dailyTasks: any[];
   settings: Settings[];
+  errorCollections?: ErrorCollection[];
+  grammarWeaknesses?: GrammarWeakness[];
+  grammarQuestions?: GrammarQuestion[];
 }
 
 export const api = {
