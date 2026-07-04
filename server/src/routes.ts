@@ -7,7 +7,8 @@ interface Vocabulary {
   word: string;
   meaning: string;
   studentId: string;
-  status: 'new' | 'reviewed' | 'mastered' | 'error';
+  type: string;
+  status: 'new' | 'old' | 'review' | 'mastered';
   correctCount: number;
   errorCount: number;
   addedAt: string;
@@ -15,6 +16,10 @@ interface Vocabulary {
   isCustom: number;
   createdAt?: string;
   updatedAt?: string;
+  consecutiveCorrectCount: number;
+  lastErrorDate?: string;
+  lastAppearedDate?: string;
+  becomeMasteredAt?: string;
 }
 
 const router = Router();
