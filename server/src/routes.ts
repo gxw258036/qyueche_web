@@ -1028,14 +1028,6 @@ router.post('/import', (req, res) => {
   }
 });
 
-function getLocalToday(): string {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 router.get('/error-collections', (req, res) => {
   try {
     const studentId = req.query.studentId as string;
