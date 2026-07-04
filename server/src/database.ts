@@ -222,8 +222,8 @@ function migrateDatabase(): void {
         const selectCols = [
           'id', 'word', 'meaning',
           'COALESCE(studentId, NULL) as studentId',
-          'COALESCE(type, "word") as type',
-          'CASE status WHEN "reviewed" THEN "old" WHEN "error" THEN "review" ELSE status END as status',
+          "COALESCE(type, 'word') as type",
+          "CASE status WHEN 'reviewed' THEN 'old' WHEN 'error' THEN 'review' ELSE status END as status",
           'COALESCE(correctCount, 0) as correctCount',
           'COALESCE(errorCount, 0) as errorCount',
           'COALESCE(addedAt, CURRENT_TIMESTAMP) as addedAt',
