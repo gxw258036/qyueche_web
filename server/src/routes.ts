@@ -724,7 +724,7 @@ router.post('/daily-task/complete', (req, res) => {
   try {
     const { taskId, errorWordIds, studentId } = req.body;
     const localToday = getLocalToday();
-    const newErrorIdsSet = new Set(errorWordIds || []);
+    const newErrorIdsSet = new Set<string>((errorWordIds || []).map((id: any) => String(id)));
 
     const task = db.prepare('SELECT * FROM daily_tasks WHERE id = ?').get(taskId) as any;
     if (!task) {
@@ -749,8 +749,8 @@ router.post('/daily-task/complete', (req, res) => {
     // 上次保存的错误标记（用于差量更新，支持多次修改结果）
     let prevErrorIdsSet = new Set<string>();
     try {
-      const prevErrors = task.markedErrorWords ? JSON.parse(task.markedErrorWords) : [];
-      prevErrorIdsSet = new Set(prevErrors);
+      const prevErrors: any[] = task.markedErrorWords ? JSON.parse(task.markedErrorWords) : [];
+      prevErrorIdsSet = new Set<string>(prevErrors.map((id: any) => String(id)));
     } catch (e) {
       // 解析失败按首次处理
     }
