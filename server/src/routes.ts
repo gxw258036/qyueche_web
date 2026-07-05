@@ -570,12 +570,12 @@ router.post('/daily-task/generate', (req, res) => {
       }
     }
 
-    // === 3. 选取新词 ===
+    // === 3. 选取新词（随机抽取） ===
     if (needNewCap > 0) {
       const newQuery = `
         SELECT * FROM vocabulary
         WHERE studentId = ? AND status = 'new'
-        ORDER BY addedAt ASC
+        ORDER BY RANDOM()
       `;
       const candidates = db.prepare(newQuery).all(studentId) as Vocabulary[];
       for (const w of candidates) {
@@ -647,7 +647,7 @@ router.post('/daily-task/generate', (req, res) => {
           WHEN 'old' THEN 2
           WHEN 'review' THEN 3
           WHEN 'mastered' THEN 4
-        END, addedAt ASC
+        END, RANDOM()
       `;
       const allCandidates1 = db.prepare(fillQueryPhase1).all(studentId) as Vocabulary[];
       for (const w of allCandidates1) {
@@ -672,7 +672,7 @@ router.post('/daily-task/generate', (req, res) => {
             WHEN 'old' THEN 2
             WHEN 'review' THEN 3
             WHEN 'mastered' THEN 4
-          END, addedAt ASC
+          END, RANDOM()
         `;
         const allCandidates2 = db.prepare(fillQueryPhase2).all(studentId) as Vocabulary[];
         for (const w of allCandidates2) {
@@ -724,7 +724,7 @@ router.post('/daily-task/complete', (req, res) => {
   try {
     const { taskId, errorWordIds, studentId } = req.body;
     const localToday = getLocalToday();
-    const errorIdsSet = new Set(errorWordIds || []);
+    const newErrorIdsSet = new Set(errorWordIds || []);
 
     const task = db.prepare('SELECT * FROM daily_tasks WHERE id = ?').get(taskId) as any;
     if (!task) {
@@ -746,84 +746,105 @@ router.post('/daily-task/complete', (req, res) => {
       console.error('解析单词数据失败:', e);
     }
 
-    const correctWordIds = allWordIds.filter(id => !errorIdsSet.has(id));
+    // 上次保存的错误标记（用于差量更新，支持多次修改结果）
+    let prevErrorIdsSet = new Set<string>();
+    try {
+      const prevErrors = task.markedErrorWords ? JSON.parse(task.markedErrorWords) : [];
+      prevErrorIdsSet = new Set(prevErrors);
+    } catch (e) {
+      // 解析失败按首次处理
+    }
+    const isRecomplete = task.completed === 1;
 
+    // 计算状态变化：
+    // addedErrors = 本次错 - 上次错（上次对→本次错，需要执行答错处理）
+    // removedErrors = 上次错 - 本次错（上次错→本次对，需要回滚答错并执行答对处理）
+    // unchanged = 上次和本次都一样（不处理）
+    const addedErrors = [...newErrorIdsSet].filter(id => !prevErrorIdsSet.has(id));
+    const removedErrors = [...prevErrorIdsSet].filter(id => !newErrorIdsSet.has(id));
+
+    // 更新任务标记
     db.prepare(`
       UPDATE daily_tasks
       SET completed = 1, markedErrorWords = ?
       WHERE id = ?
-    `).run(JSON.stringify(errorWordIds), taskId);
+    `).run(JSON.stringify(errorWordIds || []), taskId);
 
-    // 答错处理：所有答错的单词转入需复习，连续正确次数清零
-    const updateError = db.transaction((ids: string[]) => {
-      for (const id of ids) {
+    // 答错处理：新加入错误的单词 → 转入需复习
+    // 注意：如果是首次完成，prevErrorIdsSet 为空，addedErrors 就是全部错误词
+    const applyError = (id: string) => {
+      const vocab = db.prepare('SELECT * FROM vocabulary WHERE id = ?').get(id) as any;
+      if (!vocab) return;
+      // 已在 review 状态则只累加错误次数（避免状态重复流转）
+      db.prepare(`
+        UPDATE vocabulary
+        SET status = 'review', consecutiveCorrectCount = 0, errorCount = errorCount + 1,
+            lastErrorDate = ?, lastReviewedAt = ?, updatedAt = ?
+        WHERE id = ?
+      `).run(localToday, localToday, localToday, id);
+    };
+
+    // 答对处理：从错误改为正确的单词 → 执行答对状态流转
+    const applyCorrect = (id: string) => {
+      const vocab = db.prepare('SELECT * FROM vocabulary WHERE id = ?').get(id) as any;
+      if (!vocab) return;
+
+      if (vocab.status === 'new') {
         db.prepare(`
           UPDATE vocabulary
-          SET status = 'review', consecutiveCorrectCount = 0, errorCount = errorCount + 1,
-              lastErrorDate = ?, lastReviewedAt = ?, updatedAt = ?
+          SET status = 'old', consecutiveCorrectCount = 1, correctCount = correctCount + 1,
+              lastReviewedAt = ?, updatedAt = ?
           WHERE id = ?
-        `).run(localToday, localToday, localToday, id);
-      }
-    });
-
-    // 答对处理
-    const updateCorrect = db.transaction((ids: string[]) => {
-      for (const id of ids) {
-        const vocab = db.prepare('SELECT * FROM vocabulary WHERE id = ?').get(id) as any;
-        if (!vocab) continue;
-
-        if (vocab.status === 'new') {
-          // 首次默写完成 → 转为旧词
+        `).run(localToday, localToday, id);
+      } else if (vocab.status === 'old') {
+        db.prepare(`
+          UPDATE vocabulary
+          SET consecutiveCorrectCount = consecutiveCorrectCount + 1, correctCount = correctCount + 1,
+              lastReviewedAt = ?, updatedAt = ?
+          WHERE id = ?
+        `).run(localToday, localToday, id);
+      } else if (vocab.status === 'review') {
+        const newConsecutive = (vocab.consecutiveCorrectCount || 0) + 1;
+        if (newConsecutive >= 3) {
           db.prepare(`
             UPDATE vocabulary
-            SET status = 'old', consecutiveCorrectCount = 1, correctCount = correctCount + 1,
+            SET status = 'mastered', consecutiveCorrectCount = ?, correctCount = correctCount + 1,
+                becomeMasteredAt = ?, lastReviewedAt = ?, updatedAt = ?
+            WHERE id = ?
+          `).run(newConsecutive, localToday, localToday, localToday, id);
+        } else {
+          db.prepare(`
+            UPDATE vocabulary
+            SET consecutiveCorrectCount = ?, correctCount = correctCount + 1,
                 lastReviewedAt = ?, updatedAt = ?
             WHERE id = ?
-          `).run(localToday, localToday, id);
-        } else if (vocab.status === 'old') {
-          // 旧词答对 → 保持旧词，连续正确次数+1
-          db.prepare(`
-            UPDATE vocabulary
-            SET consecutiveCorrectCount = consecutiveCorrectCount + 1, correctCount = correctCount + 1,
-                lastReviewedAt = ?, updatedAt = ?
-            WHERE id = ?
-          `).run(localToday, localToday, id);
-        } else if (vocab.status === 'review') {
-          const newConsecutive = (vocab.consecutiveCorrectCount || 0) + 1;
-          if (newConsecutive >= 3) {
-            // 连续3次正确 → 转为已掌握
-            db.prepare(`
-              UPDATE vocabulary
-              SET status = 'mastered', consecutiveCorrectCount = ?, correctCount = correctCount + 1,
-                  becomeMasteredAt = ?, lastReviewedAt = ?, updatedAt = ?
-              WHERE id = ?
-            `).run(newConsecutive, localToday, localToday, localToday, id);
-          } else {
-            // 仍不足3次 → 保持需复习
-            db.prepare(`
-              UPDATE vocabulary
-              SET consecutiveCorrectCount = ?, correctCount = correctCount + 1,
-                  lastReviewedAt = ?, updatedAt = ?
-              WHERE id = ?
-            `).run(newConsecutive, localToday, localToday, id);
-          }
-        } else if (vocab.status === 'mastered') {
-          // 已掌握抽检答对 → 保持已掌握
-          db.prepare(`
-            UPDATE vocabulary
-            SET correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
-            WHERE id = ?
-          `).run(localToday, localToday, id);
+          `).run(newConsecutive, localToday, localToday, id);
         }
+      } else if (vocab.status === 'mastered') {
+        db.prepare(`
+          UPDATE vocabulary
+          SET correctCount = correctCount + 1, lastReviewedAt = ?, updatedAt = ?
+          WHERE id = ?
+        `).run(localToday, localToday, id);
       }
+    };
+
+    const applyErrorTx = db.transaction((ids: string[]) => {
+      for (const id of ids) applyError(id);
+    });
+    const applyCorrectTx = db.transaction((ids: string[]) => {
+      for (const id of ids) applyCorrect(id);
     });
 
-    if (errorWordIds && errorWordIds.length > 0) {
-      updateError(errorWordIds);
-    }
-
-    if (correctWordIds.length > 0) {
-      updateCorrect(correctWordIds);
+    if (isRecomplete) {
+      // 修改结果模式：只处理状态变化的单词，避免重复累加统计
+      if (addedErrors.length > 0) applyErrorTx(addedErrors);
+      if (removedErrors.length > 0) applyCorrectTx(removedErrors);
+    } else {
+      // 首次完成模式：全部错误词执行答错处理，全部正确词执行答对处理
+      const correctWordIds = allWordIds.filter(id => !newErrorIdsSet.has(id));
+      if (errorWordIds && errorWordIds.length > 0) applyErrorTx(errorWordIds);
+      if (correctWordIds.length > 0) applyCorrectTx(correctWordIds);
     }
 
     const updateFields: string[] = ['lastStudyDate = ?'];

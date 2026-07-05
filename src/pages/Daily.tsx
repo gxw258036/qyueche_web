@@ -16,6 +16,7 @@ const Daily: React.FC = () => {
   
   const [selectedErrors, setSelectedErrors] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -83,7 +84,22 @@ const Daily: React.FC = () => {
     if (newTask) {
       setSelectedErrors(newTask.markedErrorWords || []);
       setIsComplete(true);
+      setEditMode(false);
     }
+  };
+
+  const handleEdit = () => {
+    setEditMode(true);
+    setIsComplete(false);
+  };
+
+  const handleCancelEdit = () => {
+    // 取消编辑：恢复到上次保存的错误标记
+    if (dailyTask?.markedErrorWords) {
+      setSelectedErrors(dailyTask.markedErrorWords);
+    }
+    setEditMode(false);
+    setIsComplete(true);
   };
 
   const handlePrint = async () => {
@@ -247,7 +263,7 @@ const Daily: React.FC = () => {
           </div>
 
           {/* Complete Button */}
-          {!isComplete && (
+          {!isComplete && !editMode && (
             <div className="mt-6 sm:mt-8">
               <button
                 onClick={handleSaveErrors}
@@ -258,12 +274,36 @@ const Daily: React.FC = () => {
             </div>
           )}
 
+          {/* Edit Mode Buttons */}
+          {editMode && (
+            <div className="mt-6 sm:mt-8 flex gap-3">
+              <button
+                onClick={handleSaveErrors}
+                className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl font-semibold hover:from-yellow-500 hover:to-orange-600 transition-all text-base sm:text-lg"
+              >
+                保存修改
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="px-6 py-3 sm:py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all text-base sm:text-lg"
+              >
+                取消
+              </button>
+            </div>
+          )}
+
           {/* Success Message */}
-          {isComplete && (
+          {isComplete && !editMode && (
             <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-green-50 rounded-xl border-2 border-green-200 text-center">
               <CheckCircle2 className="mx-auto mb-2 sm:mb-4 text-green-600" size={40} />
               <h3 className="text-lg sm:text-2xl font-bold text-green-800 mb-1 sm:mb-2">太棒了！</h3>
-              <p className="text-green-700 text-sm sm:text-base">今日任务已完成，继续保持！</p>
+              <p className="text-green-700 text-sm sm:text-base mb-4">今日任务已完成，继续保持！</p>
+              <button
+                onClick={handleEdit}
+                className="px-6 py-2 bg-white text-green-700 rounded-lg font-semibold hover:bg-green-100 transition-all text-sm border-2 border-green-300"
+              >
+                修改结果
+              </button>
             </div>
           )}
         </div>
