@@ -632,6 +632,62 @@ router.post('/daily-task/generate', (req, res) => {
       }
     }
 
+    // === 最终兜底：若总数不足 TARGET_COUNT，从所有剩余可用词汇补足 ===
+    // 场景：历史数据丢失导致所有词都是新词时，需复习/旧词/已掌握的缺口全部用新词补足
+    const beforeFillCount = selectedReview.length + selectedOld.length + selectedNew.length + selectedMastered.length;
+    if (beforeFillCount < TARGET_COUNT) {
+      let deficit = TARGET_COUNT - beforeFillCount;
+
+      // 第一阶段：排除今天已出现的词，按 新词>旧词>需复习>已掌握 优先级补足
+      const fillQueryPhase1 = `
+        SELECT * FROM vocabulary
+        WHERE studentId = ?
+        ORDER BY CASE status
+          WHEN 'new' THEN 1
+          WHEN 'old' THEN 2
+          WHEN 'review' THEN 3
+          WHEN 'mastered' THEN 4
+        END, addedAt ASC
+      `;
+      const allCandidates1 = db.prepare(fillQueryPhase1).all(studentId) as Vocabulary[];
+      for (const w of allCandidates1) {
+        if (deficit <= 0) break;
+        if (selectedIds.has(w.id)) continue;
+        if (w.lastAppearedDate === localToday) continue;
+        if (w.status === 'new') selectedNew.push(w);
+        else if (w.status === 'old') selectedOld.push(w);
+        else if (w.status === 'review') selectedReview.push(w);
+        else if (w.status === 'mastered') selectedMastered.push(w);
+        selectedIds.add(w.id);
+        deficit--;
+      }
+
+      // 第二阶段：若仍不足（词库少或今天都出现过），放宽"今天已出现"限制
+      if (deficit > 0) {
+        const fillQueryPhase2 = `
+          SELECT * FROM vocabulary
+          WHERE studentId = ?
+          ORDER BY CASE status
+            WHEN 'new' THEN 1
+            WHEN 'old' THEN 2
+            WHEN 'review' THEN 3
+            WHEN 'mastered' THEN 4
+          END, addedAt ASC
+        `;
+        const allCandidates2 = db.prepare(fillQueryPhase2).all(studentId) as Vocabulary[];
+        for (const w of allCandidates2) {
+          if (deficit <= 0) break;
+          if (selectedIds.has(w.id)) continue;
+          if (w.status === 'new') selectedNew.push(w);
+          else if (w.status === 'old') selectedOld.push(w);
+          else if (w.status === 'review') selectedReview.push(w);
+          else if (w.status === 'mastered') selectedMastered.push(w);
+          selectedIds.add(w.id);
+          deficit--;
+        }
+      }
+    }
+
     // === 更新 lastAppearedDate ===
     const updateAppear = db.prepare('UPDATE vocabulary SET lastAppearedDate = ?, updatedAt = ? WHERE id = ?');
     const nowStr = new Date().toISOString();
