@@ -139,13 +139,37 @@ const Vocabulary: React.FC = () => {
     const words: { word: string; meaning: string; type?: string }[] = [];
     
     lines.forEach((line) => {
-      const parts = line.split(/[,，\t]/);
-      if (parts.length >= 2) {
-        const word = parts[0].trim();
-        const meaning = parts[1].trim();
-        if (word && meaning) {
-          words.push({ word, meaning });
-        }
+      line = line.trim();
+      if (!line) return;
+
+      // 1. 优先用 tab 分隔（最无歧义）
+      const tabIdx = line.indexOf('\t');
+      if (tabIdx > 0) {
+        const word = line.substring(0, tabIdx).trim();
+        const meaning = line.substring(tabIdx + 1).trim();
+        if (word && meaning) { words.push({ word, meaning }); return; }
+      }
+
+      // 2. 用逗号分隔时，按第一个中文字符位置拆分
+      // 英文单词中可能包含逗号（如 "Hi,I'm Bobby."），但中文含义一定以中文字符开头
+      const cnMatch = line.match(/[\u4e00-\u9fff]/);
+      if (cnMatch && cnMatch.index !== undefined) {
+        let word = line.substring(0, cnMatch.index).replace(/[,，\s]+$/, '').trim();
+        const meaning = line.substring(cnMatch.index).trim();
+        if (word && meaning) { words.push({ word, meaning }); return; }
+      }
+
+      // 3. 保底逻辑：用第一个逗号拆分
+      const commaIdx = line.indexOf(',');
+      if (commaIdx >= 0) {
+        const word = line.substring(0, commaIdx).trim();
+        const meaning = line.substring(commaIdx + 1).trim();
+        if (word && meaning) { words.push({ word, meaning }); return; }
+      }
+
+      // 4. 整行作为单词，含义为空
+      if (line) {
+        words.push({ word: line, meaning: '' });
       }
     });
     
